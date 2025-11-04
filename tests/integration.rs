@@ -172,7 +172,7 @@ fn test_functions() {
         )
         .unwrap();
     context
-        .set_value("five".to_string(), Value::Int(5))
+        .set_value("five", Value::Int(5))
         .unwrap();
 
     assert_eq!(eval_with_context("sub2 5", &context), Ok(Value::Int(3)));
@@ -255,7 +255,7 @@ fn test_n_ary_functions() {
         )
         .unwrap();
     context
-        .set_value("five".to_string(), Value::Int(5))
+        .set_value("five", Value::Int(5))
         .unwrap();
     context
         .set_function("function_four".into(), Function::new(|_| Ok(Value::Int(4))))

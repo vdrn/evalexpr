@@ -4,7 +4,7 @@
 //! This crate implements two basic variants, the `EmptyContext`, that returns `None` for each identifier and cannot be manipulated, and the `HashMapContext`, that stores its mappings in hash maps.
 //! The HashMapContext is type-safe and returns an error if the user tries to assign a value of a different type than before to an identifier.
 
-use std::{collections::HashMap, iter, marker::PhantomData};
+use std::{iter, marker::PhantomData};
 
 use crate::{
     error::EvalexprResultValue,
@@ -14,7 +14,7 @@ use crate::{
         value_type::ValueType,
         Value,
     },
-    EvalexprError, EvalexprResult,
+    EvalexprError, EvalexprResult, HashMap,
 };
 
 mod predefined;
@@ -51,7 +51,7 @@ pub trait ContextWithMutableVariables: Context {
     /// Sets the variable with the given identifier to the given value.
     fn set_value(
         &mut self,
-        _identifier: String,
+        _identifier: &str,
         _value: Value<Self::NumericTypes>,
     ) -> EvalexprResult<(), Self::NumericTypes> {
         Err(EvalexprError::ContextNotMutable)
@@ -344,10 +344,10 @@ impl<NumericTypes: EvalexprNumericTypes> ContextWithMutableVariables
 {
     fn set_value(
         &mut self,
-        identifier: String,
+        identifier: &str,
         value: Value<Self::NumericTypes>,
     ) -> EvalexprResult<(), NumericTypes> {
-        if let Some(existing_value) = self.variables.get_mut(&identifier) {
+        if let Some(existing_value) = self.variables.get_mut(identifier) {
             if ValueType::from(&existing_value) == ValueType::from(&value) {
                 *existing_value = value;
                 return Ok(());
@@ -357,7 +357,7 @@ impl<NumericTypes: EvalexprNumericTypes> ContextWithMutableVariables
         }
 
         // Implicit else, because `self.variables` and `identifier` are not unborrowed in else
-        self.variables.insert(identifier, value);
+        self.variables.insert(identifier.to_string(), value);
         Ok(())
     }
 

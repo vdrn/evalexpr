@@ -1,3 +1,6 @@
+use arrayvec::ArrayVec;
+use smallvec::SmallVec;
+
 use crate::{
     error::EvalexprResultValue,
     token::Token,
@@ -328,9 +331,38 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         &self,
         context: &C,
     ) -> EvalexprResultValue<NumericTypes> {
-        let mut arguments = Vec::new();
+        let mut arguments: ArrayVec<Value<NumericTypes>, 3> = ArrayVec::new();
+
         for child in self.children() {
-            arguments.push(child.eval_with_context(context)?);
+            arguments
+                .try_push(child.eval_with_context(context)?)
+                .expect("Too many arguments");
+        }
+        self.operator().eval(&arguments, context)
+    }
+    /// Evaluates the operator tree rooted at this node with the given context.
+    ///
+    /// Fails, if one of the operators in the expression tree fails.
+    pub fn eval_with_context_and_x<C: Context<NumericTypes = NumericTypes>>(
+        &self,
+        context: &C,
+        x: &Value<NumericTypes>,
+    ) -> EvalexprResultValue<NumericTypes> {
+        let op = self.operator();
+        if let Operator::VariableIdentifierRead { identifier } = op {
+            if identifier == "x" {
+                return Ok(x.clone());
+            }
+        }
+
+        // NOTE: ArrayVec slower than SmallVec???
+        // let mut arguments: ArrayVec<Value<NumericTypes>, 3> = ArrayVec::new();
+        let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
+
+        for child in self.children() {
+            arguments
+                .push(child.eval_with_context_and_x(context, x)?);
+                // .expect("Too many arguments");
         }
         self.operator().eval(&arguments, context)
     }
@@ -409,6 +441,22 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         context: &C,
     ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
         match self.eval_with_context(context) {
+            Ok(Value::Int(int)) => Ok(NumericTypes::int_as_float(&int)),
+            Ok(Value::Float(float)) => Ok(float),
+            Ok(value) => Err(EvalexprError::expected_number(value)),
+            Err(error) => Err(error),
+        }
+    }
+    /// Evaluates the operator tree rooted at this node into a float with an the given context.
+    /// If the result of the expression is an integer, it is silently converted into a float.
+    ///
+    /// Fails, if one of the operators in the expression tree fails.
+    pub fn eval_number_with_context_and_x<C: Context<NumericTypes = NumericTypes>>(
+        &self,
+        context: &C,
+        x: &Value<NumericTypes>,
+    ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
+        match self.eval_with_context_and_x(context, x) {
             Ok(Value::Int(int)) => Ok(NumericTypes::int_as_float(&int)),
             Ok(Value::Float(float)) => Ok(float),
             Ok(value) => Err(EvalexprError::expected_number(value)),

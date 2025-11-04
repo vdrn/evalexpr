@@ -189,7 +189,7 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
     }
 
     /// Evaluates the operator with the given arguments and context.
-    pub(crate) fn eval<C: Context<NumericTypes = NumericTypes>>(
+    pub fn eval<C: Context<NumericTypes = NumericTypes>>(
         &self,
         arguments: &[Value<NumericTypes>],
         context: &C,
@@ -454,7 +454,7 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
         match self {
             Assign => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                let target = arguments[0].as_string()?;
+                let target = arguments[0].as_str()?;
                 context.set_value(target, arguments[1].clone())?;
 
                 Ok(Value::Empty)
@@ -463,9 +463,9 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
             | OrAssign => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
 
-                let target = arguments[0].as_string()?;
+                let target = arguments[0].as_str()?;
                 let left_value = Operator::VariableIdentifierRead {
-                    identifier: target.clone(),
+                    identifier: target.to_string(),
                 }
                 .eval(&Vec::new(), context)?;
                 let arguments = vec![left_value, arguments[1].clone()];

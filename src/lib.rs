@@ -616,4 +616,6 @@ mod token;
 mod tree;
 mod value;
 
+pub(crate) use rustc_hash::FxHashMap as HashMap;
+
 // Exports

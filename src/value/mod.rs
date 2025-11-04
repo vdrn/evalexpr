@@ -78,6 +78,14 @@ impl<NumericTypes: EvalexprNumericTypes> Value<NumericTypes> {
         }
     }
 
+    /// Returns borrowes `str` from `self, or returns `Err` if `self` is not a `Value::String`.
+    pub fn as_str(&self) -> EvalexprResult<&str, NumericTypes> {
+        match self {
+            Value::String(string) => Ok(string.as_str()),
+            value => Err(EvalexprError::expected_string(value.clone())),
+        }
+    }
+
     /// Clones the value stored in `self` as `IntType`, or returns `Err` if `self` is not a `Value::Int`.
     pub fn as_int(&self) -> EvalexprResult<NumericTypes::Int, NumericTypes> {
         match self {
