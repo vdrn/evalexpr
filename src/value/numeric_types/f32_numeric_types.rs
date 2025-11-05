@@ -10,11 +10,11 @@ use super::{EvalexprFloat, EvalexprInt, EvalexprNumericTypes};
     derive(Default, serde::Serialize, serde::Deserialize)
 )]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct DefaultNumericTypes;
+pub struct F32NumericTypes;
 
-impl EvalexprNumericTypes for DefaultNumericTypes {
-    type Int = i64;
-    type Float = f64;
+impl EvalexprNumericTypes for F32NumericTypes {
+    type Int = i32;
+    type Float = f32;
 
     fn int_as_float(int: &Self::Int) -> Self::Float {
         *int as Self::Float
@@ -25,7 +25,7 @@ impl EvalexprNumericTypes for DefaultNumericTypes {
     }
 }
 
-impl<NumericTypes: EvalexprNumericTypes<Int = Self>> EvalexprInt<NumericTypes> for i64 {
+impl<NumericTypes: EvalexprNumericTypes<Int = Self>> EvalexprInt<NumericTypes> for i32 {
     const MIN: Self = Self::MIN;
     const MAX: Self = Self::MAX;
 
@@ -148,7 +148,7 @@ impl<NumericTypes: EvalexprNumericTypes<Int = Self>> EvalexprInt<NumericTypes> f
     // }
 }
 
-impl<NumericTypes: EvalexprNumericTypes<Float = Self>> EvalexprFloat<NumericTypes> for f64 {
+impl<NumericTypes: EvalexprNumericTypes<Float = Self>> EvalexprFloat<NumericTypes> for f32 {
     const MIN: Self = Self::NEG_INFINITY;
     const MAX: Self = Self::INFINITY;
 
@@ -156,12 +156,11 @@ impl<NumericTypes: EvalexprNumericTypes<Float = Self>> EvalexprFloat<NumericType
     const HALF: Self = 0.5;
     const EPSILON: f64 = f64::EPSILON;
     fn to_f64(&self) -> f64 {
-        *self
+        *self as f64
     }
     fn f64_to_float(v: f64) -> Self {
-        v
+        v as f32
     }
-
     fn pow(&self, exponent: &Self) -> Self {
         (*self).powf(*exponent)
     }

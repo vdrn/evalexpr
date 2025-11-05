@@ -7,13 +7,16 @@ use std::{
 use crate::EvalexprResult;
 
 pub mod default_numeric_types;
+pub mod f32_numeric_types;
 /*#[cfg(feature = "num-traits")]
 pub mod num_traits_numeric_types;*/
 
 /// A trait to parameterise `evalexpr` with an int type and a float type.
 ///
 /// See [`EvalexprInt`] and [`EvalexprFloat`] for the requirements on the types.
-pub trait EvalexprNumericTypes: 'static + Sized + Debug + Clone + PartialEq {
+pub trait EvalexprNumericTypes:
+    'static + Sized + Debug + Clone + PartialEq + Send + Sync + Copy
+{
     /// The integer type.
     #[cfg(feature = "serde")]
     type Int: EvalexprInt<Self> + serde::Serialize + for<'de> serde::Deserialize<'de>;
@@ -39,7 +42,7 @@ pub trait EvalexprNumericTypes: 'static + Sized + Debug + Clone + PartialEq {
 
 /// An integer type that can be used by `evalexpr`.
 pub trait EvalexprInt<NumericTypes: EvalexprNumericTypes<Int = Self>>:
-    Clone + Debug + Display + FromStr + Eq + Ord
+    Clone + Debug + Display + FromStr + Eq + Ord + Send + Sync + Copy
 {
     /// The minimum value of the integer type.
     const MIN: Self;
@@ -101,6 +104,9 @@ pub trait EvalexprInt<NumericTypes: EvalexprNumericTypes<Int = Self>>:
 /// A float type that can be used by `evalexpr`.
 pub trait EvalexprFloat<NumericTypes: EvalexprNumericTypes<Float = Self>>:
     Clone
+    + Copy
+    + Send
+    + Sync
     + Debug
     + Display
     + FromStr
@@ -122,6 +128,17 @@ pub trait EvalexprFloat<NumericTypes: EvalexprNumericTypes<Float = Self>>:
     ///
     /// Typically, this is positive infinity.
     const MAX: Self;
+
+    /// 0.5
+    const ZERO: Self;
+    /// 0.5
+    const HALF: Self;
+    /// epsilon
+    const EPSILON: f64;
+    ///  Self > f64
+    fn to_f64(&self) -> f64;
+    /// f64 -> Self
+    fn f64_to_float(v: f64) -> Self;
 
     /// Perform a power operation.
     fn pow(&self, exponent: &Self) -> Self;

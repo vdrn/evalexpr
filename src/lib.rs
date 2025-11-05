@@ -583,8 +583,8 @@ pub use crate::{
     tree::Node,
     value::{
         numeric_types::{
-            default_numeric_types::DefaultNumericTypes, EvalexprFloat, EvalexprInt,
-            EvalexprNumericTypes,
+            default_numeric_types::DefaultNumericTypes, f32_numeric_types::F32NumericTypes,
+            EvalexprFloat, EvalexprInt, EvalexprNumericTypes,
         },
         value_type::ValueType,
         EmptyType, TupleType, Value, EMPTY_VALUE,
