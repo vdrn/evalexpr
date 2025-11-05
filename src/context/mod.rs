@@ -425,11 +425,11 @@ impl<NumericTypes: EvalexprNumericTypes> Default for HashMapContext<NumericTypes
 /// use evalexpr::*;
 ///
 /// let ctx: HashMapContext<DefaultNumericTypes> = context_map! {
-///     "x" => int 8,
-///     "f" => Function::new(|_| Ok(Value::from_int(42)))
+///     "x" => float 8,
+///     "f" => Function::new(|_| Ok(Value::from_float(42.0)))
 /// }.unwrap(); // Do proper error handling here
 ///
-/// assert_eq!(eval_with_context("x + f()", &ctx), Ok(Value::from_int(50)));
+/// assert_eq!(eval_with_context("x + f()", &ctx), Ok(Value::from_float(50.0)));
 /// ```
 #[macro_export]
 macro_rules! context_map {
@@ -450,11 +450,11 @@ macro_rules! context_map {
         $crate::ContextWithMutableFunctions::set_function($ctx, $k.into(), $crate::Function::new($($v)*))
             .and($crate::context_map!(($ctx) $($tt)*))
     }};
-    // add an integer value, and chain the eventual error with the ones in the next values
-    ( ($ctx:expr) $k:expr => int $v:expr , $($tt:tt)*) => {{
-        $crate::ContextWithMutableVariables::set_value($ctx, $k.into(), $crate::Value::from_int($v.into()))
-            .and($crate::context_map!(($ctx) $($tt)*))
-    }};
+    // // add an integer value, and chain the eventual error with the ones in the next values
+    // ( ($ctx:expr) $k:expr => int $v:expr , $($tt:tt)*) => {{
+    //     $crate::ContextWithMutableVariables::set_value($ctx, $k.into(), $crate::Value::from_int($v.into()))
+    //         .and($crate::context_map!(($ctx) $($tt)*))
+    // }};
     // add a float value, and chain the eventual error with the ones in the next values
     ( ($ctx:expr) $k:expr => float $v:expr , $($tt:tt)*) => {{
         $crate::ContextWithMutableVariables::set_value($ctx, $k.into(), $crate::Value::from_float($v.into()))

@@ -205,17 +205,17 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
             },
             Add => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_number_or_string(&arguments[0])?;
-                expect_number_or_string(&arguments[1])?;
+                expect_float_or_string(&arguments[0])?;
+                expect_float_or_string(&arguments[1])?;
 
                 if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
                     let mut result = String::with_capacity(a.len() + b.len());
                     result.push_str(&a);
                     result.push_str(&b);
                     Ok(Value::String(result))
-                } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    a.checked_add(&b).map(Value::Int)
-                } else if let (Ok(a), Ok(b)) = (arguments[0].as_number(), arguments[1].as_number())
+                // } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
+                //     a.checked_add(&b).map(Value::Int)
+                } else if let (Ok(a), Ok(b)) = (arguments[0].as_float(), arguments[1].as_float())
                 {
                     Ok(Value::Float(a + b))
                 } else {
@@ -230,73 +230,73 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
             },
             Sub => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_number()?;
-                arguments[1].as_number()?;
+                arguments[0].as_float()?;
+                arguments[1].as_float()?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    a.checked_sub(&b).map(Value::Int)
-                } else {
+                // if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
+                //     a.checked_sub(&b).map(Value::Int)
+                // } else {
                     Ok(Value::Float(
-                        arguments[0].as_number()? - arguments[1].as_number()?,
+                        arguments[0].as_float()? - arguments[1].as_float()?,
                     ))
-                }
+                // }
             },
             Neg => {
                 expect_operator_argument_amount(arguments.len(), 1)?;
-                arguments[0].as_number()?;
+                arguments[0].as_float()?;
 
-                if let Ok(a) = arguments[0].as_int() {
-                    a.checked_neg().map(Value::Int)
-                } else {
-                    Ok(Value::Float(-arguments[0].as_number()?))
-                }
+                // if let Ok(a) = arguments[0].as_int() {
+                //     a.checked_neg().map(Value::Int)
+                // } else {
+                    Ok(Value::Float(-arguments[0].as_float()?))
+                // }
             },
             Mul => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_number()?;
-                arguments[1].as_number()?;
+                arguments[0].as_float()?;
+                arguments[1].as_float()?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    a.checked_mul(&b).map(Value::Int)
-                } else {
+                // if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
+                //     a.checked_mul(&b).map(Value::Int)
+                // } else {
                     Ok(Value::Float(
-                        arguments[0].as_number()? * arguments[1].as_number()?,
+                        arguments[0].as_float()? * arguments[1].as_float()?,
                     ))
-                }
+                // }
             },
             Div => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_number()?;
-                arguments[1].as_number()?;
+                arguments[0].as_float()?;
+                arguments[1].as_float()?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    a.checked_div(&b).map(Value::Int)
-                } else {
+                // if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
+                //     a.checked_div(&b).map(Value::Int)
+                // } else {
                     Ok(Value::Float(
-                        arguments[0].as_number()? / arguments[1].as_number()?,
+                        arguments[0].as_float()? / arguments[1].as_float()?,
                     ))
-                }
+                // }
             },
             Mod => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_number()?;
-                arguments[1].as_number()?;
+                arguments[0].as_float()?;
+                arguments[1].as_float()?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    a.checked_rem(&b).map(Value::Int)
-                } else {
+                // if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
+                //     a.checked_rem(&b).map(Value::Int)
+                // } else {
                     Ok(Value::Float(
-                        arguments[0].as_number()? % arguments[1].as_number()?,
+                        arguments[0].as_float()? % arguments[1].as_float()?,
                     ))
-                }
+                // }
             },
             Exp => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_number()?;
-                arguments[1].as_number()?;
+                arguments[0].as_float()?;
+                arguments[1].as_float()?;
 
                 Ok(Value::Float(
-                    arguments[0].as_number()?.pow(&arguments[1].as_number()?),
+                    arguments[0].as_float()?.pow(&arguments[1].as_float()?),
                 ))
             },
             Eq => {
@@ -311,61 +311,61 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
             },
             Gt => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_number_or_string(&arguments[0])?;
-                expect_number_or_string(&arguments[1])?;
+                expect_float_or_string(&arguments[0])?;
+                expect_float_or_string(&arguments[1])?;
 
                 if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
                     Ok(Value::Boolean(a > b))
-                } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    Ok(Value::Boolean(a > b))
+                // } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
+                //     Ok(Value::Boolean(a > b))
                 } else {
                     Ok(Value::Boolean(
-                        arguments[0].as_number()? > arguments[1].as_number()?,
+                        arguments[0].as_float()? > arguments[1].as_float()?,
                     ))
                 }
             },
             Lt => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_number_or_string(&arguments[0])?;
-                expect_number_or_string(&arguments[1])?;
+                expect_float_or_string(&arguments[0])?;
+                expect_float_or_string(&arguments[1])?;
 
                 if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
                     Ok(Value::Boolean(a < b))
-                } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    Ok(Value::Boolean(a < b))
+                // } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
+                //     Ok(Value::Boolean(a < b))
                 } else {
                     Ok(Value::Boolean(
-                        arguments[0].as_number()? < arguments[1].as_number()?,
+                        arguments[0].as_float()? < arguments[1].as_float()?,
                     ))
                 }
             },
             Geq => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_number_or_string(&arguments[0])?;
-                expect_number_or_string(&arguments[1])?;
+                expect_float_or_string(&arguments[0])?;
+                expect_float_or_string(&arguments[1])?;
 
                 if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
                     Ok(Value::Boolean(a >= b))
-                } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    Ok(Value::Boolean(a >= b))
+                // } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
+                //     Ok(Value::Boolean(a >= b))
                 } else {
                     Ok(Value::Boolean(
-                        arguments[0].as_number()? >= arguments[1].as_number()?,
+                        arguments[0].as_float()? >= arguments[1].as_float()?,
                     ))
                 }
             },
             Leq => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_number_or_string(&arguments[0])?;
-                expect_number_or_string(&arguments[1])?;
+                expect_float_or_string(&arguments[0])?;
+                expect_float_or_string(&arguments[1])?;
 
                 if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
                     Ok(Value::Boolean(a <= b))
-                } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                    Ok(Value::Boolean(a <= b))
+                // } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
+                //     Ok(Value::Boolean(a <= b))
                 } else {
                     Ok(Value::Boolean(
-                        arguments[0].as_number()? <= arguments[1].as_number()?,
+                        arguments[0].as_float()? <= arguments[1].as_float()?,
                     ))
                 }
             },

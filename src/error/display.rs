@@ -26,13 +26,13 @@ impl<NumericTypes: EvalexprNumericTypes> fmt::Display for EvalexprError<NumericT
             ExpectedString { actual } => {
                 write!(f, "Expected a Value::String, but got {:?}.", actual)
             },
-            ExpectedInt { actual } => write!(f, "Expected a Value::Int, but got {:?}.", actual),
+            // ExpectedInt { actual } => write!(f, "Expected a Value::Int, but got {:?}.", actual),
             ExpectedFloat { actual } => write!(f, "Expected a Value::Float, but got {:?}.", actual),
-            ExpectedNumber { actual } => write!(
-                f,
-                "Expected a Value::Float or Value::Int, but got {:?}.",
-                actual
-            ),
+            // ExpectedNumber { actual } => write!(
+            //     f,
+            //     "Expected a Value::Float or Value::Int, but got {:?}.",
+            //     actual
+            // ),
             ExpectedNumberOrString { actual } => write!(
                 f,
                 "Expected a Value::Number or a Value::String, but got {:?}.",

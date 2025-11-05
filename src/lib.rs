@@ -13,12 +13,12 @@
 //! ```rust
 //! use evalexpr::*;
 //!
-//! assert_eq!(eval("1 + 2 + 3"), Ok(Value::from_int(6)));
+//! assert_eq!(eval("1 + 2 + 3"), Ok(Value::from_float(6.0)));
 //! // `eval` returns a variant of the `Value` enum,
 //! // while `eval_[type]` returns the respective type directly.
 //! // Both can be used interchangeably.
-//! assert_eq!(eval_int("1 + 2 + 3"), Ok(6));
-//! assert_eq!(eval("1 /* inline comments are supported */ - 2 * 3 // as are end-of-line comments"), Ok(Value::from_int(-5)));
+//! assert_eq!(eval_float("1 + 2 + 3"), Ok(6.0));
+//! assert_eq!(eval("1 /* inline comments are supported */ - 2 * 3 // as are end-of-line comments"), Ok(Value::from_float(-5.0)));
 //! assert_eq!(eval("1.0 + 2 * 3"), Ok(Value::from_float(7.0)));
 //! assert_eq!(eval("true && 4 > 2"), Ok(Value::from(true)));
 //! ```
@@ -31,15 +31,12 @@
 //! let mut context = HashMapContext::<DefaultNumericTypes>::new();
 //! // Assign 5 to a like this
 //! assert_eq!(eval_empty_with_context_mut("a = 5", &mut context), Ok(EMPTY_VALUE));
-//! // The HashMapContext is type safe, so this will fail now
-//! assert_eq!(eval_empty_with_context_mut("a = 5.0", &mut context),
-//!            Err(EvalexprError::expected_int(Value::from_float(5.0))));
 //! // We can check which value the context stores for a like this
-//! assert_eq!(context.get_value("a"), Some(&Value::from_int(5)));
+//! assert_eq!(context.get_value("a"), Some(&Value::from_float(5.0)));
 //! // And use the value in another expression like this
-//! assert_eq!(eval_int_with_context_mut("a = a + 2; a", &mut context), Ok(7));
+//! assert_eq!(eval_float_with_context_mut("a = a + 2; a", &mut context), Ok(7.0));
 //! // It is also possible to save a bit of typing by using an operator-assignment operator
-//! assert_eq!(eval_int_with_context_mut("a += 2; a", &mut context), Ok(9));
+//! assert_eq!(eval_float_with_context_mut("a += 2; a", &mut context), Ok(9.0));
 //! ```
 //!
 //! And you can use **variables** and **functions** in expressions like this:
@@ -48,25 +45,19 @@
 //! use evalexpr::*;
 //!
 //! let context: HashMapContext<DefaultNumericTypes> = context_map! {
-//!     "five" => int 5,
-//!     "twelve" => int 12,
+//!     "five" => float 5,
+//!     "twelve" => float 12,
 //!     "f" => Function::new(|argument| {
-//!         if let Ok(int) = argument.as_int() {
-//!             Ok(Value::Int(int / 2))
-//!         } else if let Ok(float) = argument.as_float() {
+//!         if let Ok(float) = argument.as_float() {
 //!             Ok(Value::Float(float / 2.0))
 //!         } else {
-//!             Err(EvalexprError::expected_number(argument.clone()))
+//!             Err(EvalexprError::expected_float(argument.clone()))
 //!         }
 //!     }),
 //!     "avg" => Function::new(|argument| {
 //!         let arguments = argument.as_tuple()?;
 //!
-//!         if let (Value::Int(a), Value::Int(b)) = (&arguments[0], &arguments[1]) {
-//!             Ok(Value::Int((a + b) / 2))
-//!         } else {
-//!             Ok(Value::Float((arguments[0].as_number()? + arguments[1].as_number()?) / 2.0))
-//!         }
+//!         Ok(Value::Float((arguments[0].as_float()? + arguments[1].as_float()?) / 2.0))
 //!     })
 //! }.unwrap(); // Do proper error handling here
 //!
@@ -86,13 +77,13 @@
 //! let precompiled = build_operator_tree::<DefaultNumericTypes>("a * b - c > 5").unwrap(); // Do proper error handling here
 //!
 //! let mut context = context_map! {
-//!     "a" => int 6,
-//!     "b" => int 2,
-//!     "c" => int 3,
+//!     "a" => float 6,
+//!     "b" => float 2,
+//!     "c" => float 3,
 //! }.unwrap(); // Do proper error handling here
 //! assert_eq!(precompiled.eval_with_context(&context), Ok(Value::from(true)));
 //!
-//! context.set_value("c".into(), Value::from_int(8)).unwrap(); // Do proper error handling here
+//! context.set_value("c".into(), Value::from_float(8.0)).unwrap(); // Do proper error handling here
 //! assert_eq!(precompiled.eval_with_context(&context), Ok(Value::from(false)));
 //! // `Node::eval_with_context` returns a variant of the `Value` enum,
 //! // while `Node::eval_[type]_with_context` returns the respective type directly.
@@ -165,7 +156,7 @@
 //! ```rust
 //! use evalexpr::*;
 //!
-//! assert_eq!(eval("1 / 2"), Ok(Value::from_int(0)));
+//! assert_eq!(eval("1 / 2"), Ok(Value::from_float(0.5)));
 //! assert_eq!(eval("1.0 / 2"), Ok(Value::from_float(0.5)));
 //! assert_eq!(eval("2^2"), Ok(Value::from_float(4.0)));
 //! ```
@@ -181,7 +172,7 @@
 //! use evalexpr::*;
 //!
 //! assert_eq!(eval("1, \"b\", 3"),
-//!            Ok(Value::from(vec![Value::from_int(1), Value::from("b"), Value::from_int(3)])));
+//!            Ok(Value::from(vec![Value::from_float(1.0), Value::from("b"), Value::from_float(3.0)])));
 //! ```
 //!
 //! To create nested tuples, use parentheses:
@@ -190,8 +181,8 @@
 //! use evalexpr::*;
 //!
 //! assert_eq!(eval("1, 2, (true, \"b\")"), Ok(Value::from(vec![
-//!     Value::from_int(1),
-//!     Value::from_int(2),
+//!     Value::from_float(1.0),
+//!     Value::from_float(2.0),
 //!     Value::from(vec![
 //!         Value::from(true),
 //!         Value::from("b")
@@ -213,10 +204,8 @@
 //! let mut context = HashMapContext::<DefaultNumericTypes>::new();
 //! assert_eq!(eval_with_context("a = 5", &context), Err(EvalexprError::ContextNotMutable));
 //! assert_eq!(eval_empty_with_context_mut("a = 5", &mut context), Ok(EMPTY_VALUE));
-//! assert_eq!(eval_empty_with_context_mut("a = 5.0", &mut context),
-//!            Err(EvalexprError::expected_int(Value::from_float(5.0))));
-//! assert_eq!(eval_int_with_context("a", &context), Ok(5));
-//! assert_eq!(context.get_value("a"), Some(Value::from_int(5)).as_ref());
+//! assert_eq!(eval_float_with_context("a", &context), Ok(5.0));
+//! assert_eq!(context.get_value("a"), Some(Value::from_float(5.0)).as_ref());
 //! ```
 //!
 //! For each binary operator, there exists an equivalent operator-assignment operator.
@@ -225,7 +214,7 @@
 //! ```rust
 //! use evalexpr::*;
 //!
-//! assert_eq!(eval_int("a = 2; a *= 2; a += 2; a"), Ok(6));
+//! assert_eq!(eval_float("a = 2; a *= 2; a += 2; a"), Ok(6.0));
 //! assert_eq!(eval_float("a = 2.2; a /= 2.0 / 4 + 1; a"), Ok(2.2 / (2.0 / 4.0 + 1.0)));
 //! assert_eq!(eval_string("a = \"abc\"; a += \"def\"; a"), Ok("abcdef".to_string()));
 //! assert_eq!(eval_boolean("a = true; a &&= false; a"), Ok(false));
@@ -243,7 +232,7 @@
 //!
 //! let mut context = HashMapContext::<DefaultNumericTypes>::new();
 //! assert_eq!(eval("1;2;3;4;"), Ok(Value::Empty));
-//! assert_eq!(eval("1;2;3;4"), Ok(Value::from_int(4)));
+//! assert_eq!(eval("1;2;3;4"), Ok(Value::from_float(4.0)));
 //!
 //! // Initialization of variables via script
 //! assert_eq!(eval_empty_with_context_mut("hp = 1; max_hp = 5; heal_amount = 3;", &mut context),
@@ -251,8 +240,8 @@
 //! // Precompile healing script
 //! let healing_script = build_operator_tree("hp = min(hp + heal_amount, max_hp); hp").unwrap(); // Do proper error handling here
 //! // Execute precompiled healing script
-//! assert_eq!(healing_script.eval_int_with_context_mut(&mut context), Ok(4));
-//! assert_eq!(healing_script.eval_int_with_context_mut(&mut context), Ok(5));
+//! assert_eq!(healing_script.eval_float_with_context_mut(&mut context), Ok(4.0));
+//! assert_eq!(healing_script.eval_float_with_context_mut(&mut context), Ok(5.0));
 //! ```
 //!
 //! ### Contexts
@@ -275,11 +264,8 @@
 //! assert_eq!(eval_with_context_mut("a = 5;", &mut context), Ok(Value::from(())));
 //! // Assignments require mutable contexts
 //! assert_eq!(eval_with_context("a = 6", &context), Err(EvalexprError::ContextNotMutable));
-//! // The HashMapContext is type safe
-//! assert_eq!(eval_with_context_mut("a = 5.5", &mut context),
-//!            Err(EvalexprError::ExpectedInt { actual: Value::from_float(5.5) }));
 //! // Reading a variable does not require a mutable context
-//! assert_eq!(eval_with_context("a", &context), Ok(Value::from_int(5)));
+//! assert_eq!(eval_with_context("a", &context), Ok(Value::from_float(5.0)));
 //!
 //! ```
 //!
@@ -301,16 +287,16 @@
 //!
 //! let mut context = HashMapContext::<DefaultNumericTypes>::new();
 //! // We can set variables in code like this...
-//! context.set_value("a".into(), Value::from_int(5));
+//! context.set_value("a".into(), Value::from_float(5.0));
 //! // ...and read from them in expressions
-//! assert_eq!(eval_int_with_context("a", &context), Ok(5));
+//! assert_eq!(eval_float_with_context("a", &context), Ok(5.0));
 //! // We can write or overwrite variables in expressions...
 //! assert_eq!(eval_with_context_mut("a = 10; b = 1.0;", &mut context), Ok(().into()));
 //! // ...and read the value in code like this
-//! assert_eq!(context.get_value("a"), Some(&Value::from_int(10)));
+//! assert_eq!(context.get_value("a"), Some(&Value::from_float(10.0)));
 //! assert_eq!(context.get_value("b"), Some(&Value::from_float(1.0)));
 //! // ...and remove the value in code like this
-//! assert_eq!(context.remove_value("a"), Ok(Some(Value::from_int(10))));
+//! assert_eq!(context.remove_value("a"), Ok(Some(Value::from_float(10.0))));
 //! // ...and if the value does not exist when removing, it returns None.
 //! assert_eq!(context.remove_value("a"), Ok(None));
 //! ```
@@ -322,9 +308,9 @@
 //! use evalexpr::*;
 //!
 //! let context: HashMapContext<DefaultNumericTypes> = context_map!{
-//!     "f" => Function::new(|args| Ok(Value::from_int(args.as_int()? + 5))),
+//!     "f" => Function::new(|args| Ok(Value::from_float(args.as_float()? + 5.0))),
 //! }.unwrap_or_else(|error| panic!("Error creating context: {}", error));
-//! assert_eq!(eval_int_with_context("f 5", &context), Ok(10));
+//! assert_eq!(eval_float_with_context("f 5", &context), Ok(10.0));
 //! ```
 //!
 //! For more information about user-defined functions, refer to the respective [section](#user-defined-functions).
@@ -337,7 +323,7 @@
 //! ```rust
 //! use evalexpr::*;
 //! let mut context = HashMapContext::<DefaultNumericTypes>::new();
-//! assert_eq!(eval_with_context("max(1,3)",&context),Ok(Value::from_int(3)));
+//! assert_eq!(eval_with_context("max(1,3)",&context),Ok(Value::from_float(3.0)));
 //! context.set_builtin_functions_disabled(true).unwrap(); // Do proper error handling here
 //! assert_eq!(eval_with_context("max(1,3)",&context),Err(EvalexprError::FunctionIdentifierNotFound(String::from("max"))));
 //! ```
@@ -528,7 +514,7 @@
 //!         // output
 //!         2 * a /* first double a */ + 2 // then add 2"
 //!     ),
-//!     Ok(Value::Int(4))
+//!     Ok(Value::Float(4.0))
 //! );
 //! ```
 //!
@@ -558,7 +544,7 @@
 //! // In ron format, strings are surrounded by "
 //! let serialized_free = "\"five * five\"";
 //! match ron::de::from_str::<Node>(serialized_free) {
-//!     Ok(free) => assert_eq!(free.eval_with_context(&context), Ok(Value::from_int(25))),
+//!     Ok(free) => assert_eq!(free.eval_with_context(&context), Ok(Value::from_float(25.0))),
 //!     Err(error) => {
 //!         () // Handle error
 //!     }

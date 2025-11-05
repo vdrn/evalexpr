@@ -9,8 +9,8 @@ pub enum ValueType {
     String,
     /// The `Value::Float` type.
     Float,
-    /// The `Value::Int` type.
-    Int,
+    // /// The `Value::Int` type.
+    // Int,
     /// The `Value::Boolean` type.
     Boolean,
     /// The `Value::Tuple` type.
@@ -24,7 +24,7 @@ impl<NumericTypes: EvalexprNumericTypes> From<&Value<NumericTypes>> for ValueTyp
         match value {
             Value::String(_) => ValueType::String,
             Value::Float(_) => ValueType::Float,
-            Value::Int(_) => ValueType::Int,
+            // Value::Int(_) => ValueType::Int,
             Value::Boolean(_) => ValueType::Boolean,
             Value::Tuple(_) => ValueType::Tuple,
             Value::Empty => ValueType::Empty,

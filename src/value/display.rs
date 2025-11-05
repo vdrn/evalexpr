@@ -9,7 +9,7 @@ impl<NumericTypes: EvalexprNumericTypes> Display for Value<NumericTypes> {
         match self {
             Value::String(string) => write!(f, "\"{}\"", string),
             Value::Float(float) => write!(f, "{}", float),
-            Value::Int(int) => write!(f, "{}", int),
+            // Value::Int(int) => write!(f, "{}", int),
             Value::Boolean(boolean) => write!(f, "{}", boolean),
             Value::Tuple(tuple) => {
                 write!(f, "(")?;

@@ -47,11 +47,11 @@ pub enum EvalexprError<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes>
         actual: Value<NumericTypes>,
     },
 
-    /// An integer value was expected.
-    ExpectedInt {
-        /// The actual value.
-        actual: Value<NumericTypes>,
-    },
+    // /// An integer value was expected.
+    // ExpectedInt {
+    //     /// The actual value.
+    //     actual: Value<NumericTypes>,
+    // },
 
     /// A float value was expected.
     ExpectedFloat {
@@ -59,12 +59,12 @@ pub enum EvalexprError<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes>
         actual: Value<NumericTypes>,
     },
 
-    /// A numeric value was expected.
-    /// Numeric values are the variants `Value::Int` and `Value::Float`.
-    ExpectedNumber {
-        /// The actual value.
-        actual: Value<NumericTypes>,
-    },
+    // /// A numeric value was expected.
+    // /// Numeric values are the variants `Value::Int` and `Value::Float`.
+    // ExpectedNumber {
+    //     /// The actual value.
+    //     actual: Value<NumericTypes>,
+    // },
 
     /// A numeric or string value was expected.
     /// Numeric values are the variants `Value::Int` and `Value::Float`.
@@ -290,20 +290,20 @@ impl<NumericTypes: EvalexprNumericTypes> EvalexprError<NumericTypes> {
         EvalexprError::ExpectedString { actual }
     }
 
-    /// Constructs `EvalexprError::ExpectedInt{actual}`.
-    pub fn expected_int(actual: Value<NumericTypes>) -> Self {
-        EvalexprError::ExpectedInt { actual }
-    }
+    // /// Constructs `EvalexprError::ExpectedInt{actual}`.
+    // pub fn expected_int(actual: Value<NumericTypes>) -> Self {
+    //     EvalexprError::ExpectedInt { actual }
+    // }
 
     /// Constructs `EvalexprError::ExpectedFloat{actual}`.
     pub fn expected_float(actual: Value<NumericTypes>) -> Self {
         EvalexprError::ExpectedFloat { actual }
     }
 
-    /// Constructs `EvalexprError::ExpectedNumber{actual}`.
-    pub fn expected_number(actual: Value<NumericTypes>) -> Self {
-        EvalexprError::ExpectedNumber { actual }
-    }
+    // /// Constructs `EvalexprError::ExpectedNumber{actual}`.
+    // pub fn expected_number(actual: Value<NumericTypes>) -> Self {
+    //     EvalexprError::ExpectedNumber { actual }
+    // }
 
     /// Constructs `EvalexprError::ExpectedNumberOrString{actual}`.
     pub fn expected_number_or_string(actual: Value<NumericTypes>) -> Self {
@@ -351,7 +351,7 @@ impl<NumericTypes: EvalexprNumericTypes> EvalexprError<NumericTypes> {
     ) -> Self {
         match ValueType::from(expected) {
             ValueType::String => Self::expected_string(actual),
-            ValueType::Int => Self::expected_int(actual),
+            // ValueType::Int => Self::expected_int(actual),
             ValueType::Float => Self::expected_float(actual),
             ValueType::Boolean => Self::expected_boolean(actual),
             ValueType::Tuple => Self::expected_tuple(actual),
@@ -443,11 +443,11 @@ pub fn expect_function_argument_amount<NumericTypes: EvalexprNumericTypes>(
 }
 
 /// Returns `Ok(())` if the given value is a string or a numeric
-pub fn expect_number_or_string<NumericTypes: EvalexprNumericTypes>(
+pub fn expect_float_or_string<NumericTypes: EvalexprNumericTypes>(
     actual: &Value<NumericTypes>,
 ) -> EvalexprResult<(), NumericTypes> {
     match actual {
-        Value::String(_) | Value::Float(_) | Value::Int(_) => Ok(()),
+        Value::String(_) | Value::Float(_) => Ok(()),
         _ => Err(EvalexprError::expected_number_or_string(actual.clone())),
     }
 }
@@ -472,16 +472,16 @@ mod tests {
     /// Tests whose only use is to bring test coverage of trivial lines up, like trivial constructors.
     #[test]
     fn trivial_coverage_tests() {
-        assert_eq!(
-            EvalexprError::type_error(
-                Value::<DefaultNumericTypes>::Int(3),
-                vec![ValueType::String]
-            ),
-            EvalexprError::TypeError {
-                actual: Value::Int(3),
-                expected: vec![ValueType::String]
-            }
-        );
+        // assert_eq!(
+        //     EvalexprError::type_error(
+        //         Value::<DefaultNumericTypes>::Int(3),
+        //         vec![ValueType::String]
+        //     ),
+        //     EvalexprError::TypeError {
+        //         actual: Value::Int(3),
+        //         expected: vec![ValueType::String]
+        //     }
+        // );
         assert_eq!(
             EvalexprError::expected_type(
                 &Value::<DefaultNumericTypes>::String("abc".to_string()),

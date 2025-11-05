@@ -58,44 +58,44 @@ pub trait EvalexprInt<NumericTypes: EvalexprNumericTypes<Int = Self>>:
     #[expect(clippy::result_unit_err)]
     fn from_hex_str(literal: &str) -> Result<Self, ()>;
 
-    /// Perform an addition operation, returning an error on overflow.
-    fn checked_add(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes>;
+    // /// Perform an addition operation, returning an error on overflow.
+    // fn checked_add(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes>;
 
-    /// Perform a subtraction operation, returning an error on overflow.
-    fn checked_sub(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes>;
+    // /// Perform a subtraction operation, returning an error on overflow.
+    // fn checked_sub(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes>;
 
-    /// Perform a negation operation, returning an error on overflow.
-    fn checked_neg(&self) -> EvalexprResult<Self, NumericTypes>;
+    // /// Perform a negation operation, returning an error on overflow.
+    // fn checked_neg(&self) -> EvalexprResult<Self, NumericTypes>;
 
-    /// Perform a multiplication operation, returning an error on overflow.
-    fn checked_mul(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes>;
+    // /// Perform a multiplication operation, returning an error on overflow.
+    // fn checked_mul(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes>;
 
-    /// Perform a division operation, returning an error on overflow.
-    fn checked_div(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes>;
+    // /// Perform a division operation, returning an error on overflow.
+    // fn checked_div(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes>;
 
-    /// Perform a remainder operation, returning an error on overflow.
-    fn checked_rem(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes>;
+    // /// Perform a remainder operation, returning an error on overflow.
+    // fn checked_rem(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes>;
 
-    /// Compute the absolute value, returning an error on overflow.
-    fn abs(&self) -> EvalexprResult<Self, NumericTypes>;
+    // /// Compute the absolute value, returning an error on overflow.
+    // fn abs(&self) -> EvalexprResult<Self, NumericTypes>;
 
-    /// Perform a bitand operation.
-    fn bitand(&self, rhs: &Self) -> Self;
+    // /// Perform a bitand operation.
+    // fn bitand(&self, rhs: &Self) -> Self;
 
-    /// Perform a bitor operation.
-    fn bitor(&self, rhs: &Self) -> Self;
+    // /// Perform a bitor operation.
+    // fn bitor(&self, rhs: &Self) -> Self;
 
-    /// Perform a bitxor operation.
-    fn bitxor(&self, rhs: &Self) -> Self;
+    // /// Perform a bitxor operation.
+    // fn bitxor(&self, rhs: &Self) -> Self;
 
-    /// Perform a bitnot operation.
-    fn bitnot(&self) -> Self;
+    // /// Perform a bitnot operation.
+    // fn bitnot(&self) -> Self;
 
-    /// Perform a shl operation.
-    fn bit_shift_left(&self, rhs: &Self) -> Self;
+    // /// Perform a shl operation.
+    // fn bit_shift_left(&self, rhs: &Self) -> Self;
 
-    /// Perform a shr operation.
-    fn bit_shift_right(&self, rhs: &Self) -> Self;
+    // /// Perform a shr operation.
+    // fn bit_shift_right(&self, rhs: &Self) -> Self;
 }
 
 /// A float type that can be used by `evalexpr`.

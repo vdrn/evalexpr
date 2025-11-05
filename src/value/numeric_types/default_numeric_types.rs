@@ -50,104 +50,104 @@ impl<NumericTypes: EvalexprNumericTypes<Int = Self>> EvalexprInt<NumericTypes> f
         Self::from_str_radix(literal, 16).map_err(|_| ())
     }
 
-    fn checked_add(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes> {
-        let result = (*self).checked_add(*rhs);
-        if let Some(result) = result {
-            Ok(result)
-        } else {
-            Err(EvalexprError::addition_error(
-                Value::<NumericTypes>::from_int(*self),
-                Value::<NumericTypes>::from_int(*rhs),
-            ))
-        }
-    }
+    // fn checked_add(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes> {
+    //     let result = (*self).checked_add(*rhs);
+    //     if let Some(result) = result {
+    //         Ok(result)
+    //     } else {
+    //         Err(EvalexprError::addition_error(
+    //             Value::<NumericTypes>::from_int(*self),
+    //             Value::<NumericTypes>::from_int(*rhs),
+    //         ))
+    //     }
+    // }
 
-    fn checked_sub(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes> {
-        let result = (*self).checked_sub(*rhs);
-        if let Some(result) = result {
-            Ok(result)
-        } else {
-            Err(EvalexprError::subtraction_error(
-                Value::<NumericTypes>::from_int(*self),
-                Value::<NumericTypes>::from_int(*rhs),
-            ))
-        }
-    }
+    // fn checked_sub(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes> {
+    //     let result = (*self).checked_sub(*rhs);
+    //     if let Some(result) = result {
+    //         Ok(result)
+    //     } else {
+    //         Err(EvalexprError::subtraction_error(
+    //             Value::<NumericTypes>::from_int(*self),
+    //             Value::<NumericTypes>::from_int(*rhs),
+    //         ))
+    //     }
+    // }
 
-    fn checked_neg(&self) -> EvalexprResult<Self, NumericTypes> {
-        let result = (*self).checked_neg();
-        if let Some(result) = result {
-            Ok(result)
-        } else {
-            Err(EvalexprError::negation_error(
-                Value::<NumericTypes>::from_int(*self),
-            ))
-        }
-    }
+    // fn checked_neg(&self) -> EvalexprResult<Self, NumericTypes> {
+    //     let result = (*self).checked_neg();
+    //     if let Some(result) = result {
+    //         Ok(result)
+    //     } else {
+    //         Err(EvalexprError::negation_error(
+    //             Value::<NumericTypes>::from_int(*self),
+    //         ))
+    //     }
+    // }
 
-    fn checked_mul(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes> {
-        let result = (*self).checked_mul(*rhs);
-        if let Some(result) = result {
-            Ok(result)
-        } else {
-            Err(EvalexprError::multiplication_error(
-                Value::<NumericTypes>::from_int(*self),
-                Value::<NumericTypes>::from_int(*rhs),
-            ))
-        }
-    }
+    // fn checked_mul(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes> {
+    //     let result = (*self).checked_mul(*rhs);
+    //     if let Some(result) = result {
+    //         Ok(result)
+    //     } else {
+    //         Err(EvalexprError::multiplication_error(
+    //             Value::<NumericTypes>::from_int(*self),
+    //             Value::<NumericTypes>::from_int(*rhs),
+    //         ))
+    //     }
+    // }
 
-    fn checked_div(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes> {
-        let result = (*self).checked_div(*rhs);
-        if let Some(result) = result {
-            Ok(result)
-        } else {
-            Err(EvalexprError::division_error(
-                Value::<NumericTypes>::from_int(*self),
-                Value::<NumericTypes>::from_int(*rhs),
-            ))
-        }
-    }
+    // fn checked_div(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes> {
+    //     let result = (*self).checked_div(*rhs);
+    //     if let Some(result) = result {
+    //         Ok(result)
+    //     } else {
+    //         Err(EvalexprError::division_error(
+    //             Value::<NumericTypes>::from_int(*self),
+    //             Value::<NumericTypes>::from_int(*rhs),
+    //         ))
+    //     }
+    // }
 
-    fn checked_rem(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes> {
-        let result = (*self).checked_rem(*rhs);
-        if let Some(result) = result {
-            Ok(result)
-        } else {
-            Err(EvalexprError::modulation_error(
-                Value::<NumericTypes>::from_int(*self),
-                Value::<NumericTypes>::from_int(*rhs),
-            ))
-        }
-    }
+    // fn checked_rem(&self, rhs: &Self) -> EvalexprResult<Self, NumericTypes> {
+    //     let result = (*self).checked_rem(*rhs);
+    //     if let Some(result) = result {
+    //         Ok(result)
+    //     } else {
+    //         Err(EvalexprError::modulation_error(
+    //             Value::<NumericTypes>::from_int(*self),
+    //             Value::<NumericTypes>::from_int(*rhs),
+    //         ))
+    //     }
+    // }
 
-    fn abs(&self) -> EvalexprResult<Self, NumericTypes> {
-        Ok((*self).abs())
-    }
+    // fn abs(&self) -> EvalexprResult<Self, NumericTypes> {
+    //     Ok((*self).abs())
+    // }
 
-    fn bitand(&self, rhs: &Self) -> Self {
-        BitAnd::bitand(*self, *rhs)
-    }
+    // fn bitand(&self, rhs: &Self) -> Self {
+    //     BitAnd::bitand(*self, *rhs)
+    // }
 
-    fn bitor(&self, rhs: &Self) -> Self {
-        BitOr::bitor(*self, *rhs)
-    }
+    // fn bitor(&self, rhs: &Self) -> Self {
+    //     BitOr::bitor(*self, *rhs)
+    // }
 
-    fn bitxor(&self, rhs: &Self) -> Self {
-        BitXor::bitxor(*self, *rhs)
-    }
+    // fn bitxor(&self, rhs: &Self) -> Self {
+    //     BitXor::bitxor(*self, *rhs)
+    // }
 
-    fn bitnot(&self) -> Self {
-        Not::not(*self)
-    }
+    // fn bitnot(&self) -> Self {
+    //     Not::not(*self)
+    // }
 
-    fn bit_shift_left(&self, rhs: &Self) -> Self {
-        Shl::shl(*self, *rhs)
-    }
+    // fn bit_shift_left(&self, rhs: &Self) -> Self {
+    //     Shl::shl(*self, *rhs)
+    // }
 
-    fn bit_shift_right(&self, rhs: &Self) -> Self {
-        Shr::shr(*self, *rhs)
-    }
+    // fn bit_shift_right(&self, rhs: &Self) -> Self {
+    //     Shr::shr(*self, *rhs)
+    // }
 }
 
 impl<NumericTypes: EvalexprNumericTypes<Float = Self>> EvalexprFloat<NumericTypes> for f64 {

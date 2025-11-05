@@ -42,7 +42,7 @@ where
 /// context.set_function("id".into(), Function::new(|argument| {
 ///     Ok(argument.clone())
 /// })).unwrap(); // Do proper error handling here
-/// assert_eq!(eval_with_context("id(4)", &context), Ok(Value::from_int(4)));
+/// assert_eq!(eval_with_context("id(4)", &context), Ok(Value::from_float(4.0)));
 /// ```
 pub struct Function<NumericTypes: EvalexprNumericTypes> {
     function: Box<dyn ClonableFn<NumericTypes>>,
