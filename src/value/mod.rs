@@ -97,7 +97,7 @@ impl<NumericTypes: EvalexprNumericTypes> Value<NumericTypes> {
     /// Clones the value stored in  `self` as `FloatType`, or returns `Err` if `self` is not a `Value::Float`.
     pub fn as_float(&self) -> EvalexprResult<NumericTypes::Float, NumericTypes> {
         match self {
-            Value::Float(f) => Ok(f.clone()),
+            Value::Float(f) => Ok(*f),
             value => Err(EvalexprError::expected_float(value.clone())),
         }
     }
@@ -127,6 +127,13 @@ impl<NumericTypes: EvalexprNumericTypes> Value<NumericTypes> {
             value => Err(EvalexprError::expected_tuple(value.clone())),
         }
     }
+    /// Returns a reference to the value stored in `self` as `TupleType`, or returns `Err` if `self` is not a `Value::Tuple`.
+    pub fn as_tuple_ref(&self) -> EvalexprResult<&TupleType<NumericTypes>, NumericTypes> {
+        match self {
+            Value::Tuple(tuple) => Ok(tuple),
+            value => Err(EvalexprError::expected_tuple(value.clone())),
+        }
+    }
 
     /// Clones the value stored in `self` as `TupleType` or returns `Err` if `self` is not a `Value::Tuple` of the required length.
     pub fn as_fixed_len_tuple(
@@ -137,6 +144,22 @@ impl<NumericTypes: EvalexprNumericTypes> Value<NumericTypes> {
             Value::Tuple(tuple) => {
                 if tuple.len() == len {
                     Ok(tuple.clone())
+                } else {
+                    Err(EvalexprError::expected_fixed_len_tuple(len, self.clone()))
+                }
+            },
+            value => Err(EvalexprError::expected_tuple(value.clone())),
+        }
+    }
+    /// Returns the reference to the value stored in `self` as `TupleType` or returns `Err` if `self` is not a `Value::Tuple` of the required length.
+    pub fn as_fixed_len_tuple_ref(
+        &self,
+        len: usize,
+    ) -> EvalexprResult<&TupleType<NumericTypes>, NumericTypes> {
+        match self {
+            Value::Tuple(tuple) => {
+                if tuple.len() == len {
+                    Ok(tuple)
                 } else {
                     Err(EvalexprError::expected_fixed_len_tuple(len, self.clone()))
                 }

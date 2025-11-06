@@ -302,4 +302,8 @@ impl<NumericTypes: EvalexprNumericTypes<Float = Self>> EvalexprFloat<NumericType
 
         result
     }
+
+    fn signum(&self) -> Self {
+      (*self).signum()
+    }
 }

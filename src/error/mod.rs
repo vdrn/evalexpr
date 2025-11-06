@@ -52,7 +52,6 @@ pub enum EvalexprError<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes>
     //     /// The actual value.
     //     actual: Value<NumericTypes>,
     // },
-
     /// A float value was expected.
     ExpectedFloat {
         /// The actual value.
@@ -65,7 +64,6 @@ pub enum EvalexprError<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes>
     //     /// The actual value.
     //     actual: Value<NumericTypes>,
     // },
-
     /// A numeric or string value was expected.
     /// Numeric values are the variants `Value::Int` and `Value::Float`.
     ExpectedNumberOrString {
@@ -366,48 +364,6 @@ impl<NumericTypes: EvalexprNumericTypes> EvalexprError<NumericTypes> {
         EvalexprError::UnmatchedPartialToken { first, second }
     }
 
-    pub(crate) fn addition_error(augend: Value<NumericTypes>, addend: Value<NumericTypes>) -> Self {
-        EvalexprError::AdditionError { augend, addend }
-    }
-
-    pub(crate) fn subtraction_error(
-        minuend: Value<NumericTypes>,
-        subtrahend: Value<NumericTypes>,
-    ) -> Self {
-        EvalexprError::SubtractionError {
-            minuend,
-            subtrahend,
-        }
-    }
-
-    pub(crate) fn negation_error(argument: Value<NumericTypes>) -> Self {
-        EvalexprError::NegationError { argument }
-    }
-
-    pub(crate) fn multiplication_error(
-        multiplicand: Value<NumericTypes>,
-        multiplier: Value<NumericTypes>,
-    ) -> Self {
-        EvalexprError::MultiplicationError {
-            multiplicand,
-            multiplier,
-        }
-    }
-
-    pub(crate) fn division_error(
-        dividend: Value<NumericTypes>,
-        divisor: Value<NumericTypes>,
-    ) -> Self {
-        EvalexprError::DivisionError { dividend, divisor }
-    }
-
-    pub(crate) fn modulation_error(
-        dividend: Value<NumericTypes>,
-        divisor: Value<NumericTypes>,
-    ) -> Self {
-        EvalexprError::ModulationError { dividend, divisor }
-    }
-
     /// Constructs `EvalexprError::InvalidRegex(regex)`
     pub fn invalid_regex(regex: String, message: String) -> Self {
         EvalexprError::InvalidRegex { regex, message }
@@ -466,7 +422,6 @@ pub type EvalexprResultValue<NumericTypes = DefaultNumericTypes> =
 mod tests {
     use crate::{
         value::numeric_types::default_numeric_types::DefaultNumericTypes, EvalexprError, Value,
-        ValueType,
     };
 
     /// Tests whose only use is to bring test coverage of trivial lines up, like trivial constructors.

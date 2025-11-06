@@ -239,6 +239,9 @@ pub trait EvalexprFloat<NumericTypes: EvalexprNumericTypes<Float = Self>>:
     /// Returns the maximum of the two numbers, ignoring NaN.
     fn max(&self, other: &Self) -> Self;
 
+    /// Returns a number that represents the sign of `self`.
+    fn signum(&self) -> Self;
+
     /// Generate a random float value between 0.0 and 1.0.
     ///
     /// If the feature `rand` is not enabled, then this method always returns [`EvalexprError::RandNotEnabled`](crate::EvalexprError::RandNotEnabled).

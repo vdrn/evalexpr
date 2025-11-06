@@ -15,7 +15,7 @@ macro_rules! simple_math {
     };
     ($func:ident, 2) => {
         Some(Function::new(|argument: &Value<NumericTypes>| {
-            let tuple = argument.as_fixed_len_tuple(2)?;
+            let tuple = argument.as_fixed_len_tuple_ref(2)?;
             let (a, b) = (tuple[0].as_float()?, tuple[1].as_float()?);
             Ok(Value::Float(a.$func(&b)))
         }))
@@ -114,56 +114,48 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
             .into())
         })),
         "min" => Some(Function::new(|argument| {
-            let arguments = argument.as_tuple()?;
-            let mut min_int = NumericTypes::Int::MAX;
+            let arguments = argument.as_tuple_ref()?;
             let mut min_float = NumericTypes::Float::MAX;
             debug_assert!(min_float.is_infinite());
 
             for argument in arguments {
                 if let Value::Float(float) = argument {
-                    min_float = min_float.min(&float);
+                    min_float = min_float.min(float);
                 } else {
-                    return Err(EvalexprError::expected_float(argument));
+                    return Err(EvalexprError::expected_float(argument.clone()));
                 }
             }
 
-            // if (NumericTypes::int_as_float(&min_int)) < min_float {
-                // Ok(Value::Int(min_int))
-            // } else {
-                Ok(Value::Float(min_float))
-            // }
+            Ok(Value::Float(min_float))
         })),
         "max" => Some(Function::new(|argument| {
-            let arguments = argument.as_tuple()?;
-            let mut max_int = NumericTypes::Int::MIN;
+            let arguments = argument.as_tuple_ref()?;
             let mut max_float = NumericTypes::Float::MIN;
             debug_assert!(max_float.is_infinite());
 
             for argument in arguments {
                 if let Value::Float(float) = argument {
-                    max_float = max_float.max(&float);
-                // } else if let Value::Int(int) = argument {
-                //     max_int = max_int.max(int);
+                    max_float = max_float.max(float);
                 } else {
-                    return Err(EvalexprError::expected_float(argument));
+                    return Err(EvalexprError::expected_float(argument.clone()));
                 }
             }
 
             // if (NumericTypes::int_as_float(&max_int)) > max_float {
             //     Ok(Value::Int(max_int))
             // } else {
-                Ok(Value::Float(max_float))
+            Ok(Value::Float(max_float))
             // }
         })),
         "if" => Some(Function::new(|argument| {
-            let mut arguments = argument.as_fixed_len_tuple(3)?;
+            let arguments = argument.as_fixed_len_tuple_ref(3)?;
             let result_index = if arguments[0].as_boolean()? { 1 } else { 2 };
-            Ok(arguments.swap_remove(result_index))
+            Ok(arguments[result_index].clone())
         })),
         "contains" => Some(Function::new(move |argument| {
-            let arguments = argument.as_fixed_len_tuple(2)?;
+            let arguments = argument.as_fixed_len_tuple_ref(2)?;
             if let (Value::Tuple(a), b) = (&arguments[0].clone(), &arguments[1].clone()) {
-                if let Value::String(_) |  Value::Float(_) | Value::Boolean(_) = b {
+                if let Value::String(_) | Value::Float(_) | Value::Boolean(_) = b {
                     Ok(a.contains(b).into())
                 } else {
                     Err(EvalexprError::type_error(
@@ -181,7 +173,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
             }
         })),
         "contains_any" => Some(Function::new(move |argument| {
-            let arguments = argument.as_fixed_len_tuple(2)?;
+            let arguments = argument.as_fixed_len_tuple_ref(2)?;
             if let (Value::Tuple(a), b) = (&arguments[0].clone(), &arguments[1].clone()) {
                 if let Value::Tuple(b) = b {
                     let mut contains = false;
@@ -216,9 +208,13 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
         })),
         "len" => Some(Function::new(|argument| {
             if let Ok(subject) = argument.as_string() {
-                Ok(Value::Float(NumericTypes::int_as_float(&NumericTypes::Int::from_usize(subject.len())?)))
-            } else if let Ok(subject) = argument.as_tuple() {
-                Ok(Value::Float(NumericTypes::int_as_float(&NumericTypes::Int::from_usize(subject.len())?)))
+                Ok(Value::Float(NumericTypes::int_as_float(
+                    &NumericTypes::Int::from_usize(subject.len())?,
+                )))
+            } else if let Ok(subject) = argument.as_tuple_ref() {
+                Ok(Value::Float(NumericTypes::int_as_float(
+                    &NumericTypes::Int::from_usize(subject.len())?,
+                )))
             } else {
                 Err(EvalexprError::type_error(
                     argument.clone(),
@@ -229,7 +225,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
         // String functions
         #[cfg(feature = "regex")]
         "str::regex_matches" => Some(Function::new(|argument| {
-            let arguments = argument.as_fixed_len_tuple(2)?;
+            let arguments = argument.as_fixed_len_tuple_ref(2)?;
 
             let subject = arguments[0].as_string()?;
             let re_str = arguments[1].as_string()?;
@@ -243,7 +239,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
         })),
         #[cfg(feature = "regex")]
         "str::regex_replace" => Some(Function::new(|argument| {
-            let arguments = argument.as_fixed_len_tuple(3)?;
+            let arguments = argument.as_fixed_len_tuple_ref(3)?;
 
             let subject = arguments[0].as_string()?;
             let re_str = arguments[1].as_string()?;

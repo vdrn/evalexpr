@@ -5,8 +5,7 @@ use crate::{
     error::*,
     value::{
         numeric_types::{
-            default_numeric_types::DefaultNumericTypes, EvalexprFloat, EvalexprInt,
-            EvalexprNumericTypes,
+            default_numeric_types::DefaultNumericTypes, EvalexprFloat, EvalexprNumericTypes,
         },
         Value,
     },
@@ -208,16 +207,14 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
                 expect_float_or_string(&arguments[0])?;
                 expect_float_or_string(&arguments[1])?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
+                if let (Ok(a), Ok(b)) = (arguments[0].as_float(), arguments[1].as_float()) {
+                    Ok(Value::Float(a + b))
+                } else if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string())
+                {
                     let mut result = String::with_capacity(a.len() + b.len());
                     result.push_str(&a);
                     result.push_str(&b);
                     Ok(Value::String(result))
-                // } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                //     a.checked_add(&b).map(Value::Int)
-                } else if let (Ok(a), Ok(b)) = (arguments[0].as_float(), arguments[1].as_float())
-                {
-                    Ok(Value::Float(a + b))
                 } else {
                     Err(EvalexprError::wrong_type_combination(
                         self.clone(),
@@ -230,74 +227,44 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
             },
             Sub => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_float()?;
-                arguments[1].as_float()?;
+                let a = arguments[0].as_float()?;
+                let b = arguments[1].as_float()?;
 
-                // if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                //     a.checked_sub(&b).map(Value::Int)
-                // } else {
-                    Ok(Value::Float(
-                        arguments[0].as_float()? - arguments[1].as_float()?,
-                    ))
-                // }
+                Ok(Value::Float(a - b))
             },
             Neg => {
                 expect_operator_argument_amount(arguments.len(), 1)?;
-                arguments[0].as_float()?;
+                let a = arguments[0].as_float()?;
 
-                // if let Ok(a) = arguments[0].as_int() {
-                //     a.checked_neg().map(Value::Int)
-                // } else {
-                    Ok(Value::Float(-arguments[0].as_float()?))
-                // }
+                Ok(Value::Float(-a))
             },
             Mul => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_float()?;
-                arguments[1].as_float()?;
+                let a = arguments[0].as_float()?;
+                let b = arguments[1].as_float()?;
 
-                // if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                //     a.checked_mul(&b).map(Value::Int)
-                // } else {
-                    Ok(Value::Float(
-                        arguments[0].as_float()? * arguments[1].as_float()?,
-                    ))
-                // }
+                Ok(Value::Float(a * b))
             },
             Div => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_float()?;
-                arguments[1].as_float()?;
+                let a = arguments[0].as_float()?;
+                let b = arguments[1].as_float()?;
 
-                // if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                //     a.checked_div(&b).map(Value::Int)
-                // } else {
-                    Ok(Value::Float(
-                        arguments[0].as_float()? / arguments[1].as_float()?,
-                    ))
-                // }
+                Ok(Value::Float(a / b))
             },
             Mod => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_float()?;
-                arguments[1].as_float()?;
+                let a = arguments[0].as_float()?;
+                let b = arguments[1].as_float()?;
 
-                // if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                //     a.checked_rem(&b).map(Value::Int)
-                // } else {
-                    Ok(Value::Float(
-                        arguments[0].as_float()? % arguments[1].as_float()?,
-                    ))
-                // }
+                Ok(Value::Float(a % b))
             },
             Exp => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
-                arguments[0].as_float()?;
-                arguments[1].as_float()?;
+                let a = arguments[0].as_float()?;
+                let b = arguments[1].as_float()?;
 
-                Ok(Value::Float(
-                    arguments[0].as_float()?.pow(&arguments[1].as_float()?),
-                ))
+                Ok(Value::Float(a.pow(&b)))
             },
             Eq => {
                 expect_operator_argument_amount(arguments.len(), 2)?;
@@ -316,8 +283,6 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
 
                 if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
                     Ok(Value::Boolean(a > b))
-                // } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                //     Ok(Value::Boolean(a > b))
                 } else {
                     Ok(Value::Boolean(
                         arguments[0].as_float()? > arguments[1].as_float()?,
@@ -331,8 +296,6 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
 
                 if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
                     Ok(Value::Boolean(a < b))
-                // } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                //     Ok(Value::Boolean(a < b))
                 } else {
                     Ok(Value::Boolean(
                         arguments[0].as_float()? < arguments[1].as_float()?,
@@ -346,8 +309,6 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
 
                 if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
                     Ok(Value::Boolean(a >= b))
-                // } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                //     Ok(Value::Boolean(a >= b))
                 } else {
                     Ok(Value::Boolean(
                         arguments[0].as_float()? >= arguments[1].as_float()?,
@@ -361,8 +322,6 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
 
                 if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
                     Ok(Value::Boolean(a <= b))
-                // } else if let (Ok(a), Ok(b)) = (arguments[0].as_int(), arguments[1].as_int()) {
-                //     Ok(Value::Boolean(a <= b))
                 } else {
                     Ok(Value::Boolean(
                         arguments[0].as_float()? <= arguments[1].as_float()?,
