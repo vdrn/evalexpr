@@ -383,12 +383,12 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
                 expect_operator_argument_amount(arguments.len(), 1)?;
                 let arguments = &arguments[0];
 
-                match context.call_function(identifier, arguments) {
+                match context.call_function(context, identifier, arguments) {
                     Err(EvalexprError::FunctionIdentifierNotFound(_))
                         if !context.are_builtin_functions_disabled() =>
                     {
                         if let Some(builtin_function) = builtin_function(identifier) {
-                            builtin_function.call(arguments)
+                            builtin_function.call(context, arguments)
                         } else {
                             Err(EvalexprError::FunctionIdentifierNotFound(
                                 identifier.clone(),

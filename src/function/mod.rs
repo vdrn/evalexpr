@@ -1,31 +1,29 @@
 use std::fmt;
 
 use crate::{
-    error::EvalexprResultValue,
-    value::{
-        numeric_types::{default_numeric_types::DefaultNumericTypes, EvalexprNumericTypes},
-        Value,
-    },
+    Context, error::EvalexprResultValue, value::{
+        Value, numeric_types::{EvalexprNumericTypes, default_numeric_types::DefaultNumericTypes}
+    }
 };
 
 pub(crate) mod builtin;
 
 /// A helper trait to enable cloning through `Fn` trait objects.
-trait ClonableFn<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes>
+trait ClonableFn<C:Context<NumericTypes= NumericTypes>, NumericTypes: EvalexprNumericTypes = DefaultNumericTypes, >
 where
-    Self: Fn(&Value<NumericTypes>) -> EvalexprResultValue<NumericTypes>,
+    Self: Fn(&C, &Value<NumericTypes>) -> EvalexprResultValue<NumericTypes>,
     Self: Send + Sync + 'static,
 {
-    fn dyn_clone(&self) -> Box<dyn ClonableFn<NumericTypes>>;
+    fn dyn_clone(&self) -> Box<dyn ClonableFn<C, NumericTypes>>;
 }
 
-impl<F, NumericTypes: EvalexprNumericTypes> ClonableFn<NumericTypes> for F
+impl<F, NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>> ClonableFn<C, NumericTypes> for F
 where
-    F: Fn(&Value<NumericTypes>) -> EvalexprResultValue<NumericTypes>,
+    F: Fn(&C, &Value<NumericTypes>) -> EvalexprResultValue<NumericTypes>,
     F: Send + Sync + 'static,
     F: Clone,
 {
-    fn dyn_clone(&self) -> Box<dyn ClonableFn<NumericTypes>> {
+    fn dyn_clone(&self) -> Box<dyn ClonableFn<C, NumericTypes>> {
         Box::new(self.clone()) as _
     }
 }
@@ -44,11 +42,11 @@ where
 /// })).unwrap(); // Do proper error handling here
 /// assert_eq!(eval_with_context("id(4)", &context), Ok(Value::from_float(4.0)));
 /// ```
-pub struct Function<NumericTypes: EvalexprNumericTypes> {
-    function: Box<dyn ClonableFn<NumericTypes>>,
+pub struct Function<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>> {
+    function: Box<dyn ClonableFn<C, NumericTypes>>,
 }
 
-impl<NumericTypes: EvalexprNumericTypes> Clone for Function<NumericTypes> {
+impl<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes> + 'static> Clone for Function< NumericTypes,C> {
     fn clone(&self) -> Self {
         Self {
             function: self.function.dyn_clone(),
@@ -56,13 +54,13 @@ impl<NumericTypes: EvalexprNumericTypes> Clone for Function<NumericTypes> {
     }
 }
 
-impl<NumericTypes: EvalexprNumericTypes> Function<NumericTypes> {
+impl<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>> Function<NumericTypes,C> {
     /// Creates a user-defined function.
     ///
     /// The `function` is boxed for storage.
     pub fn new<F>(function: F) -> Self
     where
-        F: Fn(&Value<NumericTypes>) -> EvalexprResultValue<NumericTypes>,
+        F: Fn(&C, &Value<NumericTypes>) -> EvalexprResultValue<NumericTypes>,
         F: Send + Sync + 'static,
         F: Clone,
     {
@@ -71,12 +69,17 @@ impl<NumericTypes: EvalexprNumericTypes> Function<NumericTypes> {
         }
     }
 
-    pub(crate) fn call(&self, argument: &Value<NumericTypes>) -> EvalexprResultValue<NumericTypes> {
-        (self.function)(argument)
+    pub(crate) fn call(&self,context:&C, argument: &Value<NumericTypes>) -> EvalexprResultValue<NumericTypes> {
+        (self.function)(context, argument)
     }
 }
 
-impl<NumericTypes: EvalexprNumericTypes> fmt::Debug for Function<NumericTypes> {
+impl<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>> fmt::Debug for Function<NumericTypes,C> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "Function {{ [...] }}")
+    }
+}
+impl<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>> fmt::Display for Function<NumericTypes,C> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "Function {{ [...] }}")
     }
@@ -88,4 +91,4 @@ impl<NumericTypes: EvalexprNumericTypes> fmt::Debug for Function<NumericTypes> {
 #[doc(hidden)]
 trait IsSendAndSync: Send + Sync {}
 
-impl<NumericTypes: EvalexprNumericTypes> IsSendAndSync for Function<NumericTypes> {}
+impl<NumericTypes: EvalexprNumericTypes,C:Context<NumericTypes = NumericTypes>> IsSendAndSync for Function<NumericTypes,C> {}

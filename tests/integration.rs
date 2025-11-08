@@ -160,7 +160,7 @@ fn test_functions() {
     context
         .set_function(
             "sub2".to_string(),
-            Function::new(|argument| {
+            Function::new(|_, argument| {
                 // if let Value::Int(int) = argument {
                 //     Ok(Value::Int(int - 2))
                 // } else
@@ -192,7 +192,7 @@ fn test_n_ary_functions() {
     context
         .set_function(
             "sub2".into(),
-            Function::new(|argument| {
+            Function::new(|_, argument| {
                 // if let Value::Int(int) = argument {
                 //     Ok(Value::Int(int - 2))
                 // } else 
@@ -207,7 +207,7 @@ fn test_n_ary_functions() {
     context
         .set_function(
             "avg".into(),
-            Function::new(|argument| {
+            Function::new(|_, argument| {
                 let arguments = argument.as_tuple()?;
                 arguments[0].as_float()?;
                 arguments[1].as_float()?;
@@ -225,7 +225,7 @@ fn test_n_ary_functions() {
     context
         .set_function(
             "muladd".into(),
-            Function::new(|argument| {
+            Function::new(|_, argument| {
                 let arguments = argument.as_tuple()?;
                 arguments[0].as_float()?;
                 arguments[1].as_float()?;
@@ -247,7 +247,7 @@ fn test_n_ary_functions() {
     context
         .set_function(
             "count".into(),
-            Function::new(|arguments| match arguments {
+            Function::new(|_, arguments| match arguments {
                 Value::Tuple(tuple) => Ok(Value::from_float(
                     DefaultNumericTypes::int_as_float(
                     &(tuple.len() as <DefaultNumericTypes as EvalexprNumericTypes>::Int))
@@ -261,7 +261,7 @@ fn test_n_ary_functions() {
         .set_value("five", Value::Float(5.0))
         .unwrap();
     context
-        .set_function("function_four".into(), Function::new(|_| Ok(Value::Float(4.0))))
+        .set_function("function_four".into(), Function::new(|_, _| Ok(Value::Float(4.0))))
         .unwrap();
 
     assert_eq!(eval_with_context("avg(7, 5)", &context), Ok(Value::Float(6.0)));
@@ -301,7 +301,7 @@ fn test_capturing_functions() {
     context
         .set_function(
             "mult_3".into(),
-            Function::new(move |argument| {
+            Function::new(move |_, argument| {
                 // if let Value::Int(int) = argument {
                 //     Ok(Value::Int(int * three))
                 // } else 
@@ -320,7 +320,7 @@ fn test_capturing_functions() {
     context
         .set_function(
             "function_four".into(),
-            Function::new(move |_| Ok(Value::Float(four))),
+            Function::new(move |_, _| Ok(Value::Float(four))),
         )
         .unwrap();
 
@@ -1490,7 +1490,7 @@ fn test_empty_context() {
     let mut context = EmptyContext::<DefaultNumericTypes>::default();
     assert_eq!(context.get_value("abc"), None);
     assert_eq!(
-        context.call_function("abc", &Value::Empty),
+        context.call_function(&context, "abc", &Value::Empty),
         Err(EvalexprError::FunctionIdentifierNotFound("abc".to_owned()))
     );
     assert_eq!(
@@ -1511,7 +1511,7 @@ fn test_empty_context_with_builtin_functions() {
     let mut context = EmptyContextWithBuiltinFunctions::<DefaultNumericTypes>::default();
     assert_eq!(context.get_value("abc"), None);
     assert_eq!(
-        context.call_function("abc", &Value::Empty),
+        context.call_function(&context, "abc", &Value::Empty),
         Err(EvalexprError::FunctionIdentifierNotFound("abc".to_owned()))
     );
     assert_eq!(eval_with_context("max(1,3)", &context), Ok(Value::Float(3.0)));
@@ -1569,7 +1569,7 @@ fn test_hashmap_context_clone_debug() {
     context
         .set_function(
             "mult_3".into(),
-            Function::new(move |argument| {
+            Function::new(move |_, argument| {
                 // if let Value::Int(int) = argument {
                 //     Ok(Value::Int(int * three))
                 // } else 
@@ -1588,7 +1588,7 @@ fn test_hashmap_context_clone_debug() {
     context
         .set_function(
             "function_four".into(),
-            Function::new(move |_| Ok(Value::Float(four))),
+            Function::new(move |_,_| Ok(Value::Float(four))),
         )
         .unwrap();
     context
@@ -2236,7 +2236,7 @@ fn test_clear() {
     context
         .set_function(
             "abc".into(),
-            Function::new(|input| Ok(Value::String(format!("{input}")))),
+            Function::new(|_, input| Ok(Value::String(format!("{input}")))),
         )
         .unwrap();
     assert_eq!(
@@ -2257,7 +2257,7 @@ fn test_clear() {
     context
         .set_function(
             "abc".into(),
-            Function::new(|input| Ok(Value::String(format!("{input}")))),
+            Function::new(|_, input| Ok(Value::String(format!("{input}")))),
         )
         .unwrap();
     assert_eq!(

@@ -31,6 +31,7 @@ pub trait Context {
     /// If no function with the given identifier is found, this method returns `EvalexprError::FunctionIdentifierNotFound`.
     fn call_function(
         &self,
+        context: &Self,
         identifier: &str,
         argument: &Value<Self::NumericTypes>,
     ) -> EvalexprResultValue<Self::NumericTypes>;
@@ -72,8 +73,11 @@ pub trait ContextWithMutableFunctions: Context {
     fn set_function(
         &mut self,
         _identifier: String,
-        _function: Function<Self::NumericTypes>,
-    ) -> EvalexprResult<(), Self::NumericTypes> {
+        _function: Function<Self::NumericTypes, Self>,
+    ) -> EvalexprResult<(), Self::NumericTypes>
+    where
+        Self: Sized,
+    {
         Err(EvalexprError::ContextNotMutable)
     }
 }
@@ -119,6 +123,7 @@ impl<NumericTypes: EvalexprNumericTypes> Context for EmptyContext<NumericTypes> 
 
     fn call_function(
         &self,
+        _context: &Self,
         identifier: &str,
         _argument: &Value<Self::NumericTypes>,
     ) -> EvalexprResultValue<Self::NumericTypes> {
@@ -186,6 +191,7 @@ impl<NumericTypes: EvalexprNumericTypes> Context
 
     fn call_function(
         &self,
+        _context: &Self,
         identifier: &str,
         _argument: &Value<Self::NumericTypes>,
     ) -> EvalexprResultValue<Self::NumericTypes> {
@@ -249,7 +255,7 @@ impl<NumericTypes> Default for EmptyContextWithBuiltinFunctions<NumericTypes> {
 pub struct HashMapContext<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes> {
     variables: HashMap<String, Value<NumericTypes>>,
     #[cfg_attr(feature = "serde", serde(skip))]
-    functions: HashMap<String, Function<NumericTypes>>,
+    functions: HashMap<String, Function<NumericTypes, HashMapContext<NumericTypes>>>,
 
     /// True if builtin functions are disabled.
     without_builtin_functions: bool,
@@ -314,11 +320,12 @@ impl<NumericTypes: EvalexprNumericTypes> Context for HashMapContext<NumericTypes
 
     fn call_function(
         &self,
+        context: &Self,
         identifier: &str,
         argument: &Value<Self::NumericTypes>,
     ) -> EvalexprResultValue<Self::NumericTypes> {
         if let Some(function) = self.functions.get(identifier) {
-            function.call(argument)
+            function.call(context, argument)
         } else {
             Err(EvalexprError::FunctionIdentifierNotFound(
                 identifier.to_string(),
@@ -376,7 +383,7 @@ impl<NumericTypes: EvalexprNumericTypes> ContextWithMutableFunctions
     fn set_function(
         &mut self,
         identifier: String,
-        function: Function<NumericTypes>,
+        function: Function<NumericTypes, Self>,
     ) -> EvalexprResult<(), Self::NumericTypes> {
         self.functions.insert(identifier, function);
         Ok(())

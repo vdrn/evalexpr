@@ -2,19 +2,18 @@
 use regex::Regex;
 
 use crate::{
-    value::numeric_types::{EvalexprFloat, EvalexprInt, EvalexprNumericTypes},
-    EvalexprError, Function, Value, ValueType,
+    Context, EvalexprError, Function, Value, ValueType, value::numeric_types::{EvalexprFloat, EvalexprInt, EvalexprNumericTypes}
 };
 
 macro_rules! simple_math {
     ($func:ident) => {
-        Some(Function::new(|argument: &Value<NumericTypes>| {
+        Some(Function::new(|_c, argument: &Value<NumericTypes>| {
             let num = argument.as_float()?;
             Ok(Value::Float(num.$func()))
         }))
     };
     ($func:ident, 2) => {
-        Some(Function::new(|argument: &Value<NumericTypes>| {
+        Some(Function::new(|_c, argument: &Value<NumericTypes>| {
             let tuple = argument.as_fixed_len_tuple_ref(2)?;
             let (a, b) = (tuple[0].as_float()?, tuple[1].as_float()?);
             Ok(Value::Float(a.$func(&b)))
@@ -22,10 +21,10 @@ macro_rules! simple_math {
     };
 }
 
-fn float_is<NumericTypes: EvalexprNumericTypes>(
+fn float_is<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>>(
     func: fn(&NumericTypes::Float) -> bool,
-) -> Option<Function<NumericTypes>> {
-    Some(Function::new(move |argument: &Value<NumericTypes>| {
+) -> Option<Function<NumericTypes, C>> {
+    Some(Function::new(move |_c, argument: &Value<NumericTypes>| {
         Ok(func(&argument.as_float()?).into())
     }))
 }
@@ -47,9 +46,9 @@ fn float_is<NumericTypes: EvalexprNumericTypes>(
 //     };
 // }
 
-pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
+pub fn builtin_function<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>>(
     identifier: &str,
-) -> Option<Function<NumericTypes>> {
+) -> Option<Function<NumericTypes, C>> {
     match identifier {
         // Log
         "math::ln" => simple_math!(ln),
@@ -92,7 +91,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
         "math::is_infinite" => float_is(NumericTypes::Float::is_infinite),
         "math::is_normal" => float_is(NumericTypes::Float::is_normal),
         // Absolute value
-        "math::abs" => Some(Function::new(|argument| match argument {
+        "math::abs" => Some(Function::new(|_c, argument| match argument {
             Value::Float(num) => Ok(Value::Float(
                 <NumericTypes as EvalexprNumericTypes>::Float::abs(num),
             )),
@@ -102,7 +101,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
             _ => Err(EvalexprError::expected_float(argument.clone())),
         })),
         // Other
-        "typeof" => Some(Function::new(move |argument| {
+        "typeof" => Some(Function::new(move |_c, argument| {
             Ok(match argument {
                 Value::String(_) => "string",
                 Value::Float(_) => "float",
@@ -113,7 +112,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
             }
             .into())
         })),
-        "min" => Some(Function::new(|argument| {
+        "min" => Some(Function::new(|_c, argument| {
             let arguments = argument.as_tuple_ref()?;
             let mut min_float = NumericTypes::Float::MAX;
             debug_assert!(min_float.is_infinite());
@@ -128,7 +127,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
 
             Ok(Value::Float(min_float))
         })),
-        "max" => Some(Function::new(|argument| {
+        "max" => Some(Function::new(|_c, argument| {
             let arguments = argument.as_tuple_ref()?;
             let mut max_float = NumericTypes::Float::MIN;
             debug_assert!(max_float.is_infinite());
@@ -147,12 +146,12 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
             Ok(Value::Float(max_float))
             // }
         })),
-        "if" => Some(Function::new(|argument| {
+        "if" => Some(Function::new(|_c, argument| {
             let arguments = argument.as_fixed_len_tuple_ref(3)?;
             let result_index = if arguments[0].as_boolean()? { 1 } else { 2 };
             Ok(arguments[result_index].clone())
         })),
-        "contains" => Some(Function::new(move |argument| {
+        "contains" => Some(Function::new(move |_c, argument| {
             let arguments = argument.as_fixed_len_tuple_ref(2)?;
             if let (Value::Tuple(a), b) = (&arguments[0].clone(), &arguments[1].clone()) {
                 if let Value::String(_) | Value::Float(_) | Value::Boolean(_) = b {
@@ -172,7 +171,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
                 Err(EvalexprError::expected_tuple(arguments[0].clone()))
             }
         })),
-        "contains_any" => Some(Function::new(move |argument| {
+        "contains_any" => Some(Function::new(move |_c, argument| {
             let arguments = argument.as_fixed_len_tuple_ref(2)?;
             if let (Value::Tuple(a), b) = (&arguments[0].clone(), &arguments[1].clone()) {
                 if let Value::Tuple(b) = b {
@@ -206,7 +205,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
                 Err(EvalexprError::expected_tuple(arguments[0].clone()))
             }
         })),
-        "len" => Some(Function::new(|argument| {
+        "len" => Some(Function::new(|_c, argument| {
             if let Ok(subject) = argument.as_string() {
                 Ok(Value::Float(NumericTypes::int_as_float(
                     &NumericTypes::Int::from_usize(subject.len())?,
@@ -254,19 +253,19 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes>(
                 )),
             }
         })),
-        "str::to_lowercase" => Some(Function::new(|argument| {
+        "str::to_lowercase" => Some(Function::new(|_c, argument| {
             let subject = argument.as_string()?;
             Ok(Value::from(subject.to_lowercase()))
         })),
-        "str::to_uppercase" => Some(Function::new(|argument| {
+        "str::to_uppercase" => Some(Function::new(|_c, argument| {
             let subject = argument.as_string()?;
             Ok(Value::from(subject.to_uppercase()))
         })),
-        "str::trim" => Some(Function::new(|argument| {
+        "str::trim" => Some(Function::new(|_c, argument| {
             let subject = argument.as_string()?;
             Ok(Value::from(subject.trim()))
         })),
-        "str::from" => Some(Function::new(|argument| {
+        "str::from" => Some(Function::new(|_c, argument| {
             Ok(Value::String(argument.str_from()))
         })),
         // "str::substring" => Some(Function::new(|argument| {
