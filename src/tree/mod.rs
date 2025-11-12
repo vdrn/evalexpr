@@ -8,7 +8,7 @@ use crate::{
         numeric_types::{default_numeric_types::DefaultNumericTypes, EvalexprNumericTypes},
         TupleType, EMPTY_VALUE,
     },
-    Context, ContextWithMutableVariables, EmptyType, HashMapContext,
+    Context, ContextWithMutableVariables, EmptyType, EvalexprFloat, HashMapContext,
 };
 
 use crate::{
@@ -340,6 +340,31 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         }
         self.operator().eval(&arguments, context)
     }
+    // /// Evaluates the operator tree rooted at this node with the given context.
+    // ///
+    // /// Fails, if one of the operators in the expression tree fails.
+    // pub fn eval_with_context_and_x<C: Context<NumericTypes = NumericTypes>>(
+    //     &self,
+    //     context: &C,
+    //     x: &Value<NumericTypes>,
+    // ) -> EvalexprResultValue<NumericTypes> {
+    //     let op = self.operator();
+    //     if let Operator::VariableIdentifierRead { identifier } = op {
+    //         if identifier == "x" {
+    //             return Ok(x.clone());
+    //         }
+    //     }
+
+    //     // NOTE: ArrayVec slower than SmallVec???
+    //     // let mut arguments: ArrayVec<Value<NumericTypes>, 3> = ArrayVec::new();
+    //     let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
+
+    //     for child in self.children() {
+    //         arguments.push(child.eval_with_context_and_x(context, x)?);
+    //         // .expect("Too many arguments");
+    //     }
+    //     self.operator().eval(&arguments, context)
+    // }
     /// Evaluates the operator tree rooted at this node with the given context.
     ///
     /// Fails, if one of the operators in the expression tree fails.
@@ -347,12 +372,34 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         &self,
         context: &C,
         x: &Value<NumericTypes>,
+        step: NumericTypes::Float,
     ) -> EvalexprResultValue<NumericTypes> {
         let op = self.operator();
-        if let Operator::VariableIdentifierRead { identifier } = op {
-            if identifier == "x" {
-                return Ok(x.clone());
-            }
+
+        match op {
+            Operator::VariableIdentifierRead { identifier } => {
+                if identifier == "x" {
+                    return Ok(x.clone());
+                }
+            },
+            Operator::FunctionIdentifier { identifier } => {
+                if identifier == "d" {
+                    let x2 = Value::Float(x.as_float()? + step);
+
+                    let expr = self.children().first().ok_or_else(|| {
+                        EvalexprError::CustomMessage(
+                            "Derivative needs 1 argument: the expression".to_string(),
+                        )
+                    })?;
+                    let y2 = expr
+                        .eval_with_context_and_x(context, &x2, step)?
+                        .as_float()?;
+                    let y1 = expr.eval_with_context_and_x(context, x, step)?.as_float()?;
+
+                    return Ok(Value::Float((y2 - y1) / step));
+                }
+            },
+            _ => {},
         }
 
         // NOTE: ArrayVec slower than SmallVec???
@@ -360,7 +407,7 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
 
         for child in self.children() {
-            arguments.push(child.eval_with_context_and_x(context, x)?);
+            arguments.push(child.eval_with_context_and_x(context, x, step)?);
             // .expect("Too many arguments");
         }
         self.operator().eval(&arguments, context)
@@ -372,12 +419,33 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         &self,
         context: &C,
         y: &Value<NumericTypes>,
+        step: NumericTypes::Float,
     ) -> EvalexprResultValue<NumericTypes> {
         let op = self.operator();
-        if let Operator::VariableIdentifierRead { identifier } = op {
-            if identifier == "y" {
-                return Ok(y.clone());
-            }
+        match op {
+            Operator::VariableIdentifierRead { identifier } => {
+                if identifier == "y" {
+                    return Ok(y.clone());
+                }
+            },
+            Operator::FunctionIdentifier { identifier } => {
+                if identifier == "d" {
+                    let y2 = Value::Float(y.as_float()? + step);
+
+                    let expr = self.children().first().ok_or_else(|| {
+                        EvalexprError::CustomMessage(
+                            "Derivative needs 1 argument: the expression".to_string(),
+                        )
+                    })?;
+                    let x2 = expr
+                        .eval_with_context_and_x(context, &y2, step)?
+                        .as_float()?;
+                    let x1 = expr.eval_with_context_and_x(context, y, step)?.as_float()?;
+
+                    return Ok(Value::Float((x2 - x1) / step));
+                }
+            },
+            _ => {},
         }
 
         // NOTE: ArrayVec slower than SmallVec???
@@ -385,10 +453,10 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
 
         for child in self.children() {
-            arguments.push(child.eval_with_context_and_y(context, y)?);
+            arguments.push(child.eval_with_context_and_y(context, y, step)?);
             // .expect("Too many arguments");
         }
-        self.operator().eval(&arguments, context)
+        op.eval(&arguments, context)
     }
     /// Evaluates the operator tree rooted at this node with the given context.
     ///
@@ -477,8 +545,9 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         &self,
         context: &C,
         x: &Value<NumericTypes>,
+        step: NumericTypes::Float,
     ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context_and_x(context, x) {
+        match self.eval_with_context_and_x(context, x, step) {
             Ok(Value::Float(float)) => Ok(float),
             Ok(value) => Err(EvalexprError::expected_float(value)),
             Err(error) => Err(error),
@@ -492,8 +561,9 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         &self,
         context: &C,
         y: &Value<NumericTypes>,
+        step: NumericTypes::Float,
     ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context_and_y(context, y) {
+        match self.eval_with_context_and_y(context, y, step) {
             Ok(Value::Float(float)) => Ok(float),
             Ok(value) => Err(EvalexprError::expected_float(value)),
             Err(error) => Err(error),
