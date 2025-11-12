@@ -374,9 +374,16 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
                 if let Some(value) = context.get_value(identifier).cloned() {
                     Ok(value)
                 } else {
-                    Err(EvalexprError::VariableIdentifierNotFound(
-                        identifier.clone(),
-                    ))
+                    match context.call_function(context, identifier, &Value::Empty) {
+                        Err(EvalexprError::FunctionIdentifierNotFound(_))
+                            if !context.are_builtin_functions_disabled() =>
+                        {
+                            Err(EvalexprError::VariableIdentifierNotFound(
+                                identifier.clone(),
+                            ))
+                        },
+                        result => result,
+                    }
                 }
             },
             FunctionIdentifier { identifier } => {
