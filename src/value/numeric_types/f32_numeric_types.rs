@@ -293,6 +293,10 @@ impl<NumericTypes: EvalexprNumericTypes<Float = Self>> EvalexprFloat<NumericType
         (*self).max(*other)
     }
 
+    fn clamp(&self, min: &Self, max: &Self) -> Self {
+        (*self).clamp(*min, *max)
+    }
+
     fn random() -> EvalexprResult<Self, NumericTypes> {
         #[cfg(feature = "rand")]
         let result = Ok(rand::random());

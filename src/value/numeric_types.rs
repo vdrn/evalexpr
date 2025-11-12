@@ -242,8 +242,13 @@ pub trait EvalexprFloat<NumericTypes: EvalexprNumericTypes<Float = Self>>:
     /// Returns a number that represents the sign of `self`.
     fn signum(&self) -> Self;
 
+    /// Clamps `self` between `min` and `max`.
+    fn clamp(&self, min: &Self, max: &Self) -> Self;
+
     /// Generate a random float value between 0.0 and 1.0.
     ///
     /// If the feature `rand` is not enabled, then this method always returns [`EvalexprError::RandNotEnabled`](crate::EvalexprError::RandNotEnabled).
     fn random() -> EvalexprResult<Self, NumericTypes>;
+
+
 }

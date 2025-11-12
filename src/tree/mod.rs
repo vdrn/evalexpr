@@ -360,9 +360,8 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
 
         for child in self.children() {
-            arguments
-                .push(child.eval_with_context_and_x(context, x)?);
-                // .expect("Too many arguments");
+            arguments.push(child.eval_with_context_and_x(context, x)?);
+            // .expect("Too many arguments");
         }
         self.operator().eval(&arguments, context)
     }
@@ -386,9 +385,8 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
 
         for child in self.children() {
-            arguments
-                .push(child.eval_with_context_and_y(context, y)?);
-                // .expect("Too many arguments");
+            arguments.push(child.eval_with_context_and_y(context, y)?);
+            // .expect("Too many arguments");
         }
         self.operator().eval(&arguments, context)
     }
@@ -405,7 +403,7 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         if let Operator::VariableIdentifierRead { identifier } = op {
             if identifier == "x" {
                 return Ok(x.clone());
-            }else if identifier == "y" {
+            } else if identifier == "y" {
                 return Ok(y.clone());
             }
         }
@@ -415,9 +413,8 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
 
         for child in self.children() {
-            arguments
-                .push(child.eval_with_context_and_xy(context, x,y)?);
-                // .expect("Too many arguments");
+            arguments.push(child.eval_with_context_and_xy(context, x, y)?);
+            // .expect("Too many arguments");
         }
         self.operator().eval(&arguments, context)
     }
@@ -512,7 +509,7 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
         x: &Value<NumericTypes>,
         y: &Value<NumericTypes>,
     ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context_and_xy(context, x,y) {
+        match self.eval_with_context_and_xy(context, x, y) {
             Ok(Value::Float(float)) => Ok(float),
             Ok(value) => Err(EvalexprError::expected_float(value)),
             Err(error) => Err(error),
@@ -1046,7 +1043,9 @@ pub(crate) fn tokens_to_operator_tree<NumericTypes: EvalexprNumericTypes>(
                 result
             },
             Token::Float(float) => Some(Node::new(Operator::value(Value::Float(float)))),
-            Token::Int(int) => Some(Node::new(Operator::value(Value::Float(NumericTypes::int_as_float(&int))))),
+            Token::Int(int) => Some(Node::new(Operator::value(Value::Float(
+                NumericTypes::int_as_float(&int),
+            )))),
             Token::Boolean(boolean) => Some(Node::new(Operator::value(Value::Boolean(boolean)))),
             Token::String(string) => Some(Node::new(Operator::value(Value::String(string)))),
         };
