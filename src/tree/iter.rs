@@ -3,12 +3,14 @@ use std::slice::{Iter, IterMut};
 
 /// An iterator that traverses an operator tree in pre-order.
 pub struct NodeIter<'a, NumericTypes: EvalexprNumericTypes> {
+    node: Option<&'a Node<NumericTypes>>,
     stack: Vec<Iter<'a, Node<NumericTypes>>>,
 }
 
 impl<'a, NumericTypes: EvalexprNumericTypes> NodeIter<'a, NumericTypes> {
     fn new(node: &'a Node<NumericTypes>) -> Self {
         NodeIter {
+            node: Some(node),
             stack: vec![node.children.iter()],
         }
     }
@@ -18,6 +20,9 @@ impl<'a, NumericTypes: EvalexprNumericTypes> Iterator for NodeIter<'a, NumericTy
     type Item = &'a Node<NumericTypes>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if let Some(node) = self.node.take() {
+            return Some(node);
+        }
         loop {
             let mut result = None;
 
@@ -43,12 +48,14 @@ impl<'a, NumericTypes: EvalexprNumericTypes> Iterator for NodeIter<'a, NumericTy
 
 /// An iterator that mutably traverses an operator tree in pre-order.
 pub struct OperatorIterMut<'a, NumericTypes: EvalexprNumericTypes> {
+    root: Option<&'a mut Operator<NumericTypes>>,
     stack: Vec<IterMut<'a, Node<NumericTypes>>>,
 }
 
 impl<'a, NumericTypes: EvalexprNumericTypes> OperatorIterMut<'a, NumericTypes> {
     fn new(node: &'a mut Node<NumericTypes>) -> Self {
         OperatorIterMut {
+            root: Some(&mut node.operator),
             stack: vec![node.children.iter_mut()],
         }
     }
@@ -58,6 +65,9 @@ impl<'a, NumericTypes: EvalexprNumericTypes> Iterator for OperatorIterMut<'a, Nu
     type Item = &'a mut Operator<NumericTypes>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if let Some(root) = self.root.take() {
+            return Some(root);
+        }
         loop {
             let mut result = None;
 

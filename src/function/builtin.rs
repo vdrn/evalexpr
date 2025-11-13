@@ -2,31 +2,49 @@
 use regex::Regex;
 
 use crate::{
-    Context, EvalexprError, Function, Value, ValueType, value::numeric_types::{EvalexprFloat, EvalexprInt, EvalexprNumericTypes}
+    Context, EvalexprError, Function, Value, ValueType, error::expect_function_argument_amount, value::numeric_types::{EvalexprFloat, EvalexprInt, EvalexprNumericTypes}
 };
 
 macro_rules! simple_math {
     ($func:ident) => {
-        Some(Function::new(|_c, argument: &Value<NumericTypes>| {
-            let num = argument.as_float()?;
+        Some(Function::new(|_c, argument: &[Value<NumericTypes>]| {
+            let num = argument
+                .first()
+                .ok_or_else(|| EvalexprError::wrong_function_argument_amount(0, 1))?
+                .as_float()?;
             Ok(Value::Float(num.$func()))
         }))
     };
     ($func:ident, 2) => {
-        Some(Function::new(|_c, argument: &Value<NumericTypes>| {
-            let tuple = argument.as_fixed_len_tuple_ref(2)?;
-            let (a, b) = (tuple[0].as_float()?, tuple[1].as_float()?);
+        Some(Function::new(|_c, argument: &[Value<NumericTypes>]| {
+            let a = argument
+                .first()
+                .ok_or_else(|| EvalexprError::wrong_function_argument_amount(0, 2))?
+                .as_float()?;
+            let b = argument
+                .first()
+                .ok_or_else(|| EvalexprError::wrong_function_argument_amount(1, 2))?
+                .as_float()?;
+
             Ok(Value::Float(a.$func(&b)))
         }))
     };
 }
 
-fn float_is<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>>(
+fn float_is<NumericTypes: EvalexprNumericTypes, C: Context<NumericTypes = NumericTypes>>(
     func: fn(&NumericTypes::Float) -> bool,
 ) -> Option<Function<NumericTypes, C>> {
-    Some(Function::new(move |_c, argument: &Value<NumericTypes>| {
-        Ok(func(&argument.as_float()?).into())
-    }))
+    Some(Function::new(
+        move |_c, argument: &[Value<NumericTypes>]| {
+            Ok(func(
+                &argument
+                    .first()
+                    .ok_or_else(|| EvalexprError::wrong_function_argument_amount(0, 1))?
+                    .as_float()?,
+            )
+            .into())
+        },
+    ))
 }
 
 // macro_rules! int_function {
@@ -46,7 +64,10 @@ fn float_is<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = Numeric
 //     };
 // }
 
-pub fn builtin_function<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>>(
+pub fn builtin_function<
+    NumericTypes: EvalexprNumericTypes,
+    C: Context<NumericTypes = NumericTypes>,
+>(
     identifier: &str,
 ) -> Option<Function<NumericTypes, C>> {
     match identifier {
@@ -91,29 +112,30 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes, C:Context<NumericTyp
         "math::is_infinite" => float_is(NumericTypes::Float::is_infinite),
         "math::is_normal" => float_is(NumericTypes::Float::is_normal),
         // Absolute value
-        "math::abs" => Some(Function::new(|_c, argument| match argument {
-            Value::Float(num) => Ok(Value::Float(
+        "math::abs" => Some(Function::new(|_c, argument| match argument.first() {
+            Some(Value::Float(num)) => Ok(Value::Float(
                 <NumericTypes as EvalexprNumericTypes>::Float::abs(num),
             )),
             // Value::Int(num) => Ok(Value::Int(
             //     <NumericTypes as EvalexprNumericTypes>::Int::abs(num)?,
             // )),
-            _ => Err(EvalexprError::expected_float(argument.clone())),
+            Some(a) => Err(EvalexprError::expected_float(a.clone())),
+            None => Err(EvalexprError::wrong_operator_argument_amount(0, 1)),
         })),
-        // Other
-        "typeof" => Some(Function::new(move |_c, argument| {
-            Ok(match argument {
-                Value::String(_) => "string",
-                Value::Float(_) => "float",
-                // Value::Int(_) => "int",
-                Value::Boolean(_) => "boolean",
-                Value::Tuple(_) => "tuple",
-                Value::Empty => "empty",
-            }
-            .into())
-        })),
-        "min" => Some(Function::new(|_c, argument| {
-            let arguments = argument.as_tuple_ref()?;
+        // // Other
+        // "typeof" => Some(Function::new(move |_c, argument| {
+        //     Ok(match argument.first() {
+        //         Value::String(_) => "string",
+        //         Value::Float(_) => "float",
+        //         // Value::Int(_) => "int",
+        //         Value::Boolean(_) => "boolean",
+        //         Value::Tuple(_) => "tuple",
+        //         Value::Empty => "empty",
+        //     }
+        //     .into())
+        // })),
+        "min" => Some(Function::new(|_c, arguments| {
+            // let arguments = argument.as_tuple_ref()?;
             let mut min_float = NumericTypes::Float::MAX;
             debug_assert!(min_float.is_infinite());
 
@@ -127,8 +149,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes, C:Context<NumericTyp
 
             Ok(Value::Float(min_float))
         })),
-        "max" => Some(Function::new(|_c, argument| {
-            let arguments = argument.as_tuple_ref()?;
+        "max" => Some(Function::new(|_c, arguments| {
             let mut max_float = NumericTypes::Float::MIN;
             debug_assert!(max_float.is_infinite());
 
@@ -146,21 +167,21 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes, C:Context<NumericTyp
             Ok(Value::Float(max_float))
             // }
         })),
-        "if" => Some(Function::new(|_c, argument| {
-            let arguments = argument.as_fixed_len_tuple_ref(3)?;
+        "if" => Some(Function::new(|_c, arguments| {
+            expect_function_argument_amount(arguments.len(), 3)?;
             let result_index = if arguments[0].as_boolean()? { 1 } else { 2 };
             Ok(arguments[result_index].clone())
         })),
-        "contains" => Some(Function::new(move |_c, argument| {
-            let arguments = argument.as_fixed_len_tuple_ref(2)?;
+        "contains" => Some(Function::new(move |_c, arguments| {
+            expect_function_argument_amount(arguments.len(), 2)?;
             if let (Value::Tuple(a), b) = (&arguments[0].clone(), &arguments[1].clone()) {
-                if let Value::String(_) | Value::Float(_) | Value::Boolean(_) = b {
+                if let Value::Float(_) | Value::Boolean(_) = b {
                     Ok(a.contains(b).into())
                 } else {
                     Err(EvalexprError::type_error(
                         b.clone(),
                         vec![
-                            ValueType::String,
+                            // ValueType::String,
                             // ValueType::Int,
                             ValueType::Float,
                             ValueType::Boolean,
@@ -171,15 +192,15 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes, C:Context<NumericTyp
                 Err(EvalexprError::expected_tuple(arguments[0].clone()))
             }
         })),
-        "contains_any" => Some(Function::new(move |_c, argument| {
-            let arguments = argument.as_fixed_len_tuple_ref(2)?;
+        "contains_any" => Some(Function::new(move |_c, arguments| {
+            expect_function_argument_amount(arguments.len(), 2)?;
             if let (Value::Tuple(a), b) = (&arguments[0].clone(), &arguments[1].clone()) {
                 if let Value::Tuple(b) = b {
                     let mut contains = false;
                     for value in b {
-                        if let Value::String(_)
-                        // | Value::Int(_)
-                        | Value::Float(_)
+                        if let //Value::String(_)
+                        // | Value::Int(_) | 
+                          Value::Float(_)
                         | Value::Boolean(_) = value
                         {
                             if a.contains(value) {
@@ -189,7 +210,7 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes, C:Context<NumericTyp
                             return Err(EvalexprError::type_error(
                                 value.clone(),
                                 vec![
-                                    ValueType::String,
+                                    // ValueType::String,
                                     // ValueType::Int,
                                     ValueType::Float,
                                     ValueType::Boolean,
@@ -205,69 +226,76 @@ pub fn builtin_function<NumericTypes: EvalexprNumericTypes, C:Context<NumericTyp
                 Err(EvalexprError::expected_tuple(arguments[0].clone()))
             }
         })),
-        "len" => Some(Function::new(|_c, argument| {
-            if let Ok(subject) = argument.as_string() {
-                Ok(Value::Float(NumericTypes::int_as_float(
-                    &NumericTypes::Int::from_usize(subject.len())?,
-                )))
-            } else if let Ok(subject) = argument.as_tuple_ref() {
+        "len" => Some(Function::new(|_c, arguments| {
+            expect_function_argument_amount(arguments.len(), 1)?;
+            // if let Ok(subject) = arguments[0].as_str() {
+            //     Ok(Value::Float(NumericTypes::int_as_float(
+            //         &NumericTypes::Int::from_usize(subject.len())?,
+            //     )))
+            // } else 
+              if let Ok(subject) = arguments[0].as_tuple_ref() {
                 Ok(Value::Float(NumericTypes::int_as_float(
                     &NumericTypes::Int::from_usize(subject.len())?,
                 )))
             } else {
                 Err(EvalexprError::type_error(
-                    argument.clone(),
-                    vec![ValueType::String, ValueType::Tuple],
+                    arguments[0].clone(),
+                    vec![ValueType::Tuple],
                 ))
             }
         })),
         // String functions
-        #[cfg(feature = "regex")]
-        "str::regex_matches" => Some(Function::new(|argument| {
-            let arguments = argument.as_fixed_len_tuple_ref(2)?;
+        // #[cfg(feature = "regex")]
+        // "str::regex_matches" => Some(Function::new(|arguments| {
+        //     expect_function_argument_amount(arguments.len(), 2)?;
 
-            let subject = arguments[0].as_string()?;
-            let re_str = arguments[1].as_string()?;
-            match Regex::new(&re_str) {
-                Ok(re) => Ok(Value::Boolean(re.is_match(&subject))),
-                Err(err) => Err(EvalexprError::invalid_regex(
-                    re_str.to_string(),
-                    format!("{}", err),
-                )),
-            }
-        })),
-        #[cfg(feature = "regex")]
-        "str::regex_replace" => Some(Function::new(|argument| {
-            let arguments = argument.as_fixed_len_tuple_ref(3)?;
+        //     let subject = arguments[0].as_string()?;
+        //     let re_str = arguments[1].as_string()?;
+        //     match Regex::new(&re_str) {
+        //         Ok(re) => Ok(Value::Boolean(re.is_match(&subject))),
+        //         Err(err) => Err(EvalexprError::invalid_regex(
+        //             re_str.to_string(),
+        //             format!("{}", err),
+        //         )),
+        //     }
+        // })),
+        // #[cfg(feature = "regex")]
+        // "str::regex_replace" => Some(Function::new(|arguments| {
+        //     expect_function_argument_amount(arguments.len(), 3)?;
 
-            let subject = arguments[0].as_string()?;
-            let re_str = arguments[1].as_string()?;
-            let repl = arguments[2].as_string()?;
-            match Regex::new(&re_str) {
-                Ok(re) => Ok(Value::String(
-                    re.replace_all(&subject, repl.as_str()).to_string(),
-                )),
-                Err(err) => Err(EvalexprError::invalid_regex(
-                    re_str.to_string(),
-                    format!("{}", err),
-                )),
-            }
-        })),
-        "str::to_lowercase" => Some(Function::new(|_c, argument| {
-            let subject = argument.as_string()?;
-            Ok(Value::from(subject.to_lowercase()))
-        })),
-        "str::to_uppercase" => Some(Function::new(|_c, argument| {
-            let subject = argument.as_string()?;
-            Ok(Value::from(subject.to_uppercase()))
-        })),
-        "str::trim" => Some(Function::new(|_c, argument| {
-            let subject = argument.as_string()?;
-            Ok(Value::from(subject.trim()))
-        })),
-        "str::from" => Some(Function::new(|_c, argument| {
-            Ok(Value::String(argument.str_from()))
-        })),
+        //     let subject = arguments[0].as_str()?;
+        //     let re_str = arguments[1].as_str()?;
+        //     let repl = arguments[2].as_str()?;
+        //     match Regex::new(&re_str) {
+        //         Ok(re) => Ok(Value::String(
+        //             re.replace_all(&subject, repl.as_str()).to_string(),
+        //         )),
+        //         Err(err) => Err(EvalexprError::invalid_regex(
+        //             re_str.to_string(),
+        //             format!("{}", err),
+        //         )),
+        //     }
+        // })),
+        // "str::to_lowercase" => Some(Function::new(|_c, arguments| {
+        //     expect_function_argument_amount(arguments.len(), 1)?;
+
+        //     let subject = arguments[0].as_str()?;
+        //     Ok(Value::from(subject.to_lowercase()))
+        // })),
+        // "str::to_uppercase" => Some(Function::new(|_c, arguments| {
+        //     expect_function_argument_amount(arguments.len(), 1)?;
+        //     let subject = arguments[0].as_str()?;
+        //     Ok(Value::from(subject.to_uppercase()))
+        // })),
+        // "str::trim" => Some(Function::new(|_c, arguments| {
+        //     expect_function_argument_amount(arguments.len(), 1)?;
+        //     let subject = arguments[0].as_str()?;
+        //     Ok(Value::from(subject.trim()))
+        // })),
+        // "str::from" => Some(Function::new(|_c, arguments| {
+        //     expect_function_argument_amount(arguments.len(), 1)?;
+        //     Ok(Value::String(arguments[0].str_from()))
+        // })),
         // "str::substring" => Some(Function::new(|argument| {
         //     let args = argument.as_ranged_len_tuple(2..=3)?;
         //     let subject = args[0].as_string()?;

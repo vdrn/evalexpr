@@ -7,8 +7,9 @@ use super::numeric_types::EvalexprNumericTypes;
 impl<NumericTypes: EvalexprNumericTypes> Display for Value<NumericTypes> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         match self {
-            Value::String(string) => write!(f, "\"{}\"", string),
+            // Value::String(string) => write!(f, "\"{}\"", string),
             Value::Float(float) => write!(f, "{}", float),
+            Value::Float2(f1, f2) => write!(f, "(){f1},{f2})"),
             // Value::Int(int) => write!(f, "{}", int),
             Value::Boolean(boolean) => write!(f, "{}", boolean),
             Value::Tuple(tuple) => {

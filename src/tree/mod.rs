@@ -42,8 +42,8 @@ mod iter;
 ///
 #[derive(Debug, PartialEq, Clone)]
 pub struct Node<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes> {
-    operator: Operator<NumericTypes>,
-    children: Vec<Node<NumericTypes>>,
+    pub(crate) operator: Operator<NumericTypes>,
+    pub(crate) children: Vec<Node<NumericTypes>>,
 }
 
 impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
@@ -324,525 +324,7 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
             })
     }
 
-    /// Evaluates the operator tree rooted at this node with the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_with_context<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-    ) -> EvalexprResultValue<NumericTypes> {
-        let mut arguments: ArrayVec<Value<NumericTypes>, 3> = ArrayVec::new();
 
-        for child in self.children() {
-            arguments
-                .try_push(child.eval_with_context(context)?)
-                .expect("Too many arguments");
-        }
-        self.operator().eval(&arguments, context)
-    }
-    // /// Evaluates the operator tree rooted at this node with the given context.
-    // ///
-    // /// Fails, if one of the operators in the expression tree fails.
-    // pub fn eval_with_context_and_x<C: Context<NumericTypes = NumericTypes>>(
-    //     &self,
-    //     context: &C,
-    //     x: &Value<NumericTypes>,
-    // ) -> EvalexprResultValue<NumericTypes> {
-    //     let op = self.operator();
-    //     if let Operator::VariableIdentifierRead { identifier } = op {
-    //         if identifier == "x" {
-    //             return Ok(x.clone());
-    //         }
-    //     }
-
-    //     // NOTE: ArrayVec slower than SmallVec???
-    //     // let mut arguments: ArrayVec<Value<NumericTypes>, 3> = ArrayVec::new();
-    //     let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
-
-    //     for child in self.children() {
-    //         arguments.push(child.eval_with_context_and_x(context, x)?);
-    //         // .expect("Too many arguments");
-    //     }
-    //     self.operator().eval(&arguments, context)
-    // }
-    /// Evaluates the operator tree rooted at this node with the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_with_context_and_x<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-        x: &Value<NumericTypes>,
-        step: NumericTypes::Float,
-    ) -> EvalexprResultValue<NumericTypes> {
-        let op = self.operator();
-
-        match op {
-            Operator::VariableIdentifierRead { identifier } => {
-                if identifier == "x" {
-                    return Ok(x.clone());
-                }
-            },
-            Operator::FunctionIdentifier { identifier } => {
-                if identifier == "d" {
-                    let x2 = Value::Float(x.as_float()? + step);
-
-                    let expr = self.children().first().ok_or_else(|| {
-                        EvalexprError::CustomMessage(
-                            "Derivative needs 1 argument: the expression".to_string(),
-                        )
-                    })?;
-                    let y2 = expr
-                        .eval_with_context_and_x(context, &x2, step)?
-                        .as_float()?;
-                    let y1 = expr.eval_with_context_and_x(context, x, step)?.as_float()?;
-
-                    return Ok(Value::Float((y2 - y1) / step));
-                }
-            },
-            _ => {},
-        }
-
-        // NOTE: ArrayVec slower than SmallVec???
-        // let mut arguments: ArrayVec<Value<NumericTypes>, 3> = ArrayVec::new();
-        let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
-
-        for child in self.children() {
-            arguments.push(child.eval_with_context_and_x(context, x, step)?);
-            // .expect("Too many arguments");
-        }
-        self.operator().eval(&arguments, context)
-    }
-    /// Evaluates the operator tree rooted at this node with the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_with_context_and_y<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-        y: &Value<NumericTypes>,
-        step: NumericTypes::Float,
-    ) -> EvalexprResultValue<NumericTypes> {
-        let op = self.operator();
-        match op {
-            Operator::VariableIdentifierRead { identifier } => {
-                if identifier == "y" {
-                    return Ok(y.clone());
-                }
-            },
-            Operator::FunctionIdentifier { identifier } => {
-                if identifier == "d" {
-                    let y2 = Value::Float(y.as_float()? + step);
-
-                    let expr = self.children().first().ok_or_else(|| {
-                        EvalexprError::CustomMessage(
-                            "Derivative needs 1 argument: the expression".to_string(),
-                        )
-                    })?;
-                    let x2 = expr
-                        .eval_with_context_and_x(context, &y2, step)?
-                        .as_float()?;
-                    let x1 = expr.eval_with_context_and_x(context, y, step)?.as_float()?;
-
-                    return Ok(Value::Float((x2 - x1) / step));
-                }
-            },
-            _ => {},
-        }
-
-        // NOTE: ArrayVec slower than SmallVec???
-        // let mut arguments: ArrayVec<Value<NumericTypes>, 3> = ArrayVec::new();
-        let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
-
-        for child in self.children() {
-            arguments.push(child.eval_with_context_and_y(context, y, step)?);
-            // .expect("Too many arguments");
-        }
-        op.eval(&arguments, context)
-    }
-    /// Evaluates the operator tree rooted at this node with the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_with_context_and_xy<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-        x: &Value<NumericTypes>,
-        y: &Value<NumericTypes>,
-    ) -> EvalexprResultValue<NumericTypes> {
-        let op = self.operator();
-        if let Operator::VariableIdentifierRead { identifier } = op {
-            if identifier == "x" {
-                return Ok(x.clone());
-            } else if identifier == "y" {
-                return Ok(y.clone());
-            }
-        }
-
-        // NOTE: ArrayVec slower than SmallVec???
-        // let mut arguments: ArrayVec<Value<NumericTypes>, 3> = ArrayVec::new();
-        let mut arguments: SmallVec<[Value<NumericTypes>; 3]> = SmallVec::new();
-
-        for child in self.children() {
-            arguments.push(child.eval_with_context_and_xy(context, x, y)?);
-            // .expect("Too many arguments");
-        }
-        self.operator().eval(&arguments, context)
-    }
-
-    /// Evaluates the operator tree rooted at this node with the given mutable context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_with_context_mut<
-        C: ContextWithMutableVariables + Context<NumericTypes = NumericTypes>,
-    >(
-        &self,
-        context: &mut C,
-    ) -> EvalexprResultValue<NumericTypes> {
-        let mut arguments = Vec::new();
-        for child in self.children() {
-            arguments.push(child.eval_with_context_mut(context)?);
-        }
-        self.operator().eval_mut(&arguments, context)
-    }
-
-    /// Evaluates the operator tree rooted at this node.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval(&self) -> EvalexprResultValue<NumericTypes> {
-        self.eval_with_context_mut(&mut HashMapContext::new())
-    }
-
-    /// Evaluates the operator tree rooted at this node into a string with an the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_string_with_context<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-    ) -> EvalexprResult<String, NumericTypes> {
-        match self.eval_with_context(context) {
-            Ok(Value::String(string)) => Ok(string),
-            Ok(value) => Err(EvalexprError::expected_string(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Evaluates the operator tree rooted at this node into a float with an the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_float_with_context<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-    ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context(context) {
-            Ok(Value::Float(float)) => Ok(float),
-            Ok(value) => Err(EvalexprError::expected_float(value)),
-            Err(error) => Err(error),
-        }
-    }
-    /// Evaluates the operator tree rooted at this node into a float with an the given context.
-    /// If the result of the expression is an integer, it is silently converted into a float.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_float_with_context_and_x<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-        x: &Value<NumericTypes>,
-        step: NumericTypes::Float,
-    ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context_and_x(context, x, step) {
-            Ok(Value::Float(float)) => Ok(float),
-            Ok(value) => Err(EvalexprError::expected_float(value)),
-            Err(error) => Err(error),
-        }
-    }
-    /// Evaluates the operator tree rooted at this node into a float with an the given context.
-    /// If the result of the expression is an integer, it is silently converted into a float.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_float_with_context_and_y<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-        y: &Value<NumericTypes>,
-        step: NumericTypes::Float,
-    ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context_and_y(context, y, step) {
-            Ok(Value::Float(float)) => Ok(float),
-            Ok(value) => Err(EvalexprError::expected_float(value)),
-            Err(error) => Err(error),
-        }
-    }
-    /// Evaluates the operator tree rooted at this node into a float with an the given context.
-    /// If the result of the expression is an integer, it is silently converted into a float.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_float_with_context_and_xy<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-        x: &Value<NumericTypes>,
-        y: &Value<NumericTypes>,
-    ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context_and_xy(context, x, y) {
-            Ok(Value::Float(float)) => Ok(float),
-            Ok(value) => Err(EvalexprError::expected_float(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    // /// Evaluates the operator tree rooted at this node into an integer with an the given context.
-    // ///
-    // /// Fails, if one of the operators in the expression tree fails.
-    // pub fn eval_int_with_context<C: Context<NumericTypes = NumericTypes>>(
-    //     &self,
-    //     context: &C,
-    // ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Int, NumericTypes> {
-    //     match self.eval_with_context(context) {
-    //         Ok(Value::Int(int)) => Ok(int),
-    //         Ok(value) => Err(EvalexprError::expected_int(value)),
-    //         Err(error) => Err(error),
-    //     }
-    // }
-
-    // /// Evaluates the operator tree rooted at this node into a float with an the given context.
-    // /// If the result of the expression is an integer, it is silently converted into a float.
-    // ///
-    // /// Fails, if one of the operators in the expression tree fails.
-    // pub fn eval_number_with_context<C: Context<NumericTypes = NumericTypes>>(
-    //     &self,
-    //     context: &C,
-    // ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-    //     match self.eval_with_context(context) {
-    //         Ok(Value::Int(int)) => Ok(NumericTypes::int_as_float(&int)),
-    //         Ok(Value::Float(float)) => Ok(float),
-    //         Ok(value) => Err(EvalexprError::expected_number(value)),
-    //         Err(error) => Err(error),
-    //     }
-    // }
-    // /// Evaluates the operator tree rooted at this node into a float with an the given context.
-    // /// If the result of the expression is an integer, it is silently converted into a float.
-    // ///
-    // /// Fails, if one of the operators in the expression tree fails.
-    // pub fn eval_number_with_context_and_x<C: Context<NumericTypes = NumericTypes>>(
-    //     &self,
-    //     context: &C,
-    //     x: &Value<NumericTypes>,
-    // ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-    //     match self.eval_with_context_and_x(context, x) {
-    //         Ok(Value::Int(int)) => Ok(NumericTypes::int_as_float(&int)),
-    //         Ok(Value::Float(float)) => Ok(float),
-    //         Ok(value) => Err(EvalexprError::expected_number(value)),
-    //         Err(error) => Err(error),
-    //     }
-    // }
-
-    /// Evaluates the operator tree rooted at this node into a boolean with an the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_boolean_with_context<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-    ) -> EvalexprResult<bool, NumericTypes> {
-        match self.eval_with_context(context) {
-            Ok(Value::Boolean(boolean)) => Ok(boolean),
-            Ok(value) => Err(EvalexprError::expected_boolean(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Evaluates the operator tree rooted at this node into a tuple with an the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_tuple_with_context<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-    ) -> EvalexprResult<TupleType<NumericTypes>, NumericTypes> {
-        match self.eval_with_context(context) {
-            Ok(Value::Tuple(tuple)) => Ok(tuple),
-            Ok(value) => Err(EvalexprError::expected_tuple(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Evaluates the operator tree rooted at this node into an empty value with an the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_empty_with_context<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-    ) -> EvalexprResult<EmptyType, NumericTypes> {
-        match self.eval_with_context(context) {
-            Ok(Value::Empty) => Ok(EMPTY_VALUE),
-            Ok(value) => Err(EvalexprError::expected_empty(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Evaluates the operator tree rooted at this node into a string with an the given mutable context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_string_with_context_mut<
-        C: ContextWithMutableVariables + Context<NumericTypes = NumericTypes>,
-    >(
-        &self,
-        context: &mut C,
-    ) -> EvalexprResult<String, NumericTypes> {
-        match self.eval_with_context_mut(context) {
-            Ok(Value::String(string)) => Ok(string),
-            Ok(value) => Err(EvalexprError::expected_string(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Evaluates the operator tree rooted at this node into a float with an the given mutable context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_float_with_context_mut<
-        C: ContextWithMutableVariables + Context<NumericTypes = NumericTypes>,
-    >(
-        &self,
-        context: &mut C,
-    ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context_mut(context) {
-            Ok(Value::Float(float)) => Ok(float),
-            Ok(value) => Err(EvalexprError::expected_float(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    // /// Evaluates the operator tree rooted at this node into an integer with an the given mutable context.
-    // ///
-    // /// Fails, if one of the operators in the expression tree fails.
-    // pub fn eval_int_with_context_mut<
-    //     C: ContextWithMutableVariables + Context<NumericTypes = NumericTypes>,
-    // >(
-    //     &self,
-    //     context: &mut C,
-    // ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Int, NumericTypes> {
-    //     match self.eval_with_context_mut(context) {
-    //         Ok(Value::Int(int)) => Ok(int),
-    //         Ok(value) => Err(EvalexprError::expected_int(value)),
-    //         Err(error) => Err(error),
-    //     }
-    // }
-
-    // /// Evaluates the operator tree rooted at this node into a float with an the given mutable context.
-    // /// If the result of the expression is an integer, it is silently converted into a float.
-    // ///
-    // /// Fails, if one of the operators in the expression tree fails.
-    // pub fn eval_number_with_context_mut<
-    //     C: ContextWithMutableVariables + Context<NumericTypes = NumericTypes>,
-    // >(
-    //     &self,
-    //     context: &mut C,
-    // ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-    //     match self.eval_with_context_mut(context) {
-    //         Ok(Value::Int(int)) => Ok(<NumericTypes as EvalexprNumericTypes>::int_as_float(&int)),
-    //         Ok(Value::Float(float)) => Ok(float),
-    //         Ok(value) => Err(EvalexprError::expected_number(value)),
-    //         Err(error) => Err(error),
-    //     }
-    // }
-
-    /// Evaluates the operator tree rooted at this node into a boolean with an the given mutable context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_boolean_with_context_mut<
-        C: ContextWithMutableVariables + Context<NumericTypes = NumericTypes>,
-    >(
-        &self,
-        context: &mut C,
-    ) -> EvalexprResult<bool, NumericTypes> {
-        match self.eval_with_context_mut(context) {
-            Ok(Value::Boolean(boolean)) => Ok(boolean),
-            Ok(value) => Err(EvalexprError::expected_boolean(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Evaluates the operator tree rooted at this node into a tuple with an the given mutable context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_tuple_with_context_mut<
-        C: ContextWithMutableVariables + Context<NumericTypes = NumericTypes>,
-    >(
-        &self,
-        context: &mut C,
-    ) -> EvalexprResult<TupleType<NumericTypes>, NumericTypes> {
-        match self.eval_with_context_mut(context) {
-            Ok(Value::Tuple(tuple)) => Ok(tuple),
-            Ok(value) => Err(EvalexprError::expected_tuple(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Evaluates the operator tree rooted at this node into an empty value with an the given mutable context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_empty_with_context_mut<
-        C: ContextWithMutableVariables + Context<NumericTypes = NumericTypes>,
-    >(
-        &self,
-        context: &mut C,
-    ) -> EvalexprResult<EmptyType, NumericTypes> {
-        match self.eval_with_context_mut(context) {
-            Ok(Value::Empty) => Ok(EMPTY_VALUE),
-            Ok(value) => Err(EvalexprError::expected_empty(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Evaluates the operator tree rooted at this node into a string.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_string(&self) -> EvalexprResult<String, NumericTypes> {
-        self.eval_string_with_context_mut(&mut HashMapContext::new())
-    }
-
-    /// Evaluates the operator tree rooted at this node into a float.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_float(
-        &self,
-    ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        self.eval_float_with_context_mut(&mut HashMapContext::new())
-    }
-
-    // /// Evaluates the operator tree rooted at this node into an integer.
-    // ///
-    // /// Fails, if one of the operators in the expression tree fails.
-    // pub fn eval_int(
-    //     &self,
-    // ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Int, NumericTypes> {
-    //     self.eval_int_with_context_mut(&mut HashMapContext::new())
-    // }
-
-    // /// Evaluates the operator tree rooted at this node into a float.
-    // /// If the result of the expression is an integer, it is silently converted into a float.
-    // ///
-    // /// Fails, if one of the operators in the expression tree fails.
-    // pub fn eval_number(
-    //     &self,
-    // ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-    //     self.eval_number_with_context_mut(&mut HashMapContext::new())
-    // }
-
-    /// Evaluates the operator tree rooted at this node into a boolean.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_boolean(&self) -> EvalexprResult<bool, NumericTypes> {
-        self.eval_boolean_with_context_mut(&mut HashMapContext::new())
-    }
-
-    /// Evaluates the operator tree rooted at this node into a tuple.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_tuple(&self) -> EvalexprResult<TupleType<NumericTypes>, NumericTypes> {
-        self.eval_tuple_with_context_mut(&mut HashMapContext::new())
-    }
-
-    /// Evaluates the operator tree rooted at this node into an empty value.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_empty(&self) -> EvalexprResult<EmptyType, NumericTypes> {
-        self.eval_empty_with_context_mut(&mut HashMapContext::new())
-    }
 
     /// Returns the children of this node as a slice.
     pub fn children(&self) -> &[Node<NumericTypes>] {
@@ -882,14 +364,33 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
 
     fn insert_back_prioritized(
         &mut self,
-        node: Node<NumericTypes>,
+        mut node: Node<NumericTypes>,
         is_root_node: bool,
     ) -> EvalexprResult<(), NumericTypes> {
         // println!(
         //     "Inserting {:?} into {:?}, is_root_node = {is_root_node}",
-        //     node.operator(),
-        //     self.operator()
+        //     node, self,
         // );
+        if matches!(self.operator(), Operator::FunctionIdentifier { .. })
+            && node.operator() == &Operator::RootNode
+        {
+            if let Some(child) = node.children.pop() {
+                if child.operator() == &Operator::Tuple {
+                    // println!("pushing tuple children into function");
+                    for mut child in child.children {
+                        if child.operator() == &Operator::RootNode {
+                            self.children.append(&mut child.children);
+                        } else {
+                            self.children.push(child);
+                        }
+                    }
+                    return Ok(());
+                } else {
+                    self.children.push(child);
+                    return Ok(());
+                }
+            }
+        }
         // println!("Self is {:?}", self);
         if self.operator().precedence() < node.operator().precedence() || node.operator().is_unary() || is_root_node
             // Right-to-left chaining
@@ -951,12 +452,20 @@ impl<NumericTypes: EvalexprNumericTypes> Node<NumericTypes> {
                     {
                         return Err(EvalexprError::MissingOperatorOutsideOfBrace);
                     }
-                    node.children.push(last_child);
+                    if last_child.operator() == &Operator::RootNode {
+                        node.children.extend(last_child.children);
+                    } else {
+                        node.children.push(last_child);
+                    }
                     Ok(())
                 }
             } else {
                 // println!("Inserting as specified");
+                // if node.operator() == &Operator::RootNode {
+                //     self.children.extend(node.children);
+                // } else {
                 self.children.push(node);
+                // }
                 Ok(())
             }
         } else {
@@ -1036,6 +545,18 @@ fn collapse_all_sequences<NumericTypes: EvalexprNumericTypes>(
     // println!("Root stack after collapsing all sequences is: {:?}", root_stack);
     Ok(())
 }
+// fn remove_root_nodes<NumericTypes: EvalexprNumericTypes>(node: &mut Node<NumericTypes>) {
+//     if node.operator() == &Operator::RootNode {
+//         if node.children.len() == 1 {
+//             *node = node.children.pop().unwrap();
+//         } else if node.children.len() > 1 {
+//             panic!("Root node has more than one child");
+//         }
+//     }
+//     for child in node.children.iter_mut() {
+//         remove_root_nodes(child);
+//     }
+// }
 
 pub(crate) fn tokens_to_operator_tree<NumericTypes: EvalexprNumericTypes>(
     tokens: Vec<Token<NumericTypes>>,
@@ -1043,6 +564,7 @@ pub(crate) fn tokens_to_operator_tree<NumericTypes: EvalexprNumericTypes>(
     let mut root_stack = vec![Node::root_node()];
     let mut last_token_is_rightsided_value = false;
     let mut token_iter = tokens.iter().peekable();
+    // println!("TOKENS TO OPERATOR TREE: {tokens:?}");
 
     while let Some(token) = token_iter.next().cloned() {
         let next = token_iter.peek().cloned();
@@ -1117,7 +639,10 @@ pub(crate) fn tokens_to_operator_tree<NumericTypes: EvalexprNumericTypes>(
                 NumericTypes::int_as_float(&int),
             )))),
             Token::Boolean(boolean) => Some(Node::new(Operator::value(Value::Boolean(boolean)))),
-            Token::String(string) => Some(Node::new(Operator::value(Value::String(string)))),
+            Token::String(_) => {
+              return Err(EvalexprError::CustomMessage(format!("Strings are not supported yet")));
+// Some(Node::new(Operator::value(Value::String(string)))),
+            }
         };
 
         if let Some(mut node) = node {
@@ -1186,7 +711,14 @@ pub(crate) fn tokens_to_operator_tree<NumericTypes: EvalexprNumericTypes>(
     if root_stack.len() > 1 {
         Err(EvalexprError::UnmatchedLBrace)
     } else if let Some(root) = root_stack.pop() {
+        // remove_root_nodes(&mut root);
         Ok(root)
+
+        // if root.operator() == &Operator::RootNode && root.children.len() == 1 {
+        //     Ok(root.children.pop().unwrap())
+        // } else {
+        //     Ok(root)
+        // }
     } else {
         Err(EvalexprError::UnmatchedRBrace)
     }

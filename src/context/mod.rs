@@ -33,7 +33,7 @@ pub trait Context {
         &self,
         context: &Self,
         identifier: &str,
-        argument: &Value<Self::NumericTypes>,
+        argument: &[Value<Self::NumericTypes>],
     ) -> EvalexprResultValue<Self::NumericTypes>;
 
     /// Checks if builtin functions are disabled.
@@ -125,7 +125,7 @@ impl<NumericTypes: EvalexprNumericTypes> Context for EmptyContext<NumericTypes> 
         &self,
         _context: &Self,
         identifier: &str,
-        _argument: &Value<Self::NumericTypes>,
+        _argument: &[Value<Self::NumericTypes>],
     ) -> EvalexprResultValue<Self::NumericTypes> {
         Err(EvalexprError::FunctionIdentifierNotFound(
             identifier.to_string(),
@@ -193,7 +193,7 @@ impl<NumericTypes: EvalexprNumericTypes> Context
         &self,
         _context: &Self,
         identifier: &str,
-        _argument: &Value<Self::NumericTypes>,
+        _argument: &[Value<Self::NumericTypes>],
     ) -> EvalexprResultValue<Self::NumericTypes> {
         Err(EvalexprError::FunctionIdentifierNotFound(
             identifier.to_string(),
@@ -322,7 +322,7 @@ impl<NumericTypes: EvalexprNumericTypes> Context for HashMapContext<NumericTypes
         &self,
         context: &Self,
         identifier: &str,
-        argument: &Value<Self::NumericTypes>,
+        argument: &[Value<Self::NumericTypes>],
     ) -> EvalexprResultValue<Self::NumericTypes> {
         if let Some(function) = self.functions.get(identifier) {
             function.call(context, argument)

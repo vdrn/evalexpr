@@ -1,5 +1,6 @@
 use crate::{
     error::EvalexprResultValue,
+    compiled_node::CompiledNode,
     token, tree,
     value::{
         numeric_types::{default_numeric_types::DefaultNumericTypes, EvalexprNumericTypes},
@@ -43,7 +44,10 @@ pub fn eval_with_context<C: Context>(
     string: &str,
     context: &C,
 ) -> EvalexprResultValue<C::NumericTypes> {
-    tree::tokens_to_operator_tree(token::tokenize(string)?)?.eval_with_context(context)
+    let node = tree::tokens_to_operator_tree(token::tokenize(string)?)?;
+    let compiled_node: CompiledNode<C::NumericTypes> = node.try_into()?;
+
+    compiled_node.eval_with_context(context)
 }
 
 /// Evaluate the given expression string with the given mutable context.
@@ -65,7 +69,11 @@ pub fn eval_with_context_mut<C: ContextWithMutableVariables>(
     string: &str,
     context: &mut C,
 ) -> EvalexprResultValue<C::NumericTypes> {
-    tree::tokens_to_operator_tree(token::tokenize(string)?)?.eval_with_context_mut(context)
+    let node = tree::tokens_to_operator_tree(token::tokenize(string)?)?;
+    let compiled_node: CompiledNode<C::NumericTypes> = node.try_into()?;
+
+    compiled_node.eval_with_context_mut(context)
+
 }
 
 /// Build the operator tree for the given expression string.
@@ -94,16 +102,17 @@ pub fn eval_with_context_mut<C: ContextWithMutableVariables>(
 /// *See the [crate doc](index.html) for more examples and explanations of the expression format.*
 pub fn build_operator_tree<NumericTypes: EvalexprNumericTypes>(
     string: &str,
-) -> EvalexprResult<Node<NumericTypes>, NumericTypes> {
-    tree::tokens_to_operator_tree(token::tokenize(string)?)
+) -> EvalexprResult<CompiledNode<NumericTypes>, NumericTypes> {
+    let node = tree::tokens_to_operator_tree(token::tokenize(string)?)?;
+    node.try_into()
 }
 
-/// Evaluate the given expression string into a string.
-///
-/// *See the [crate doc](index.html) for more examples and explanations of the expression format.*
-pub fn eval_string(string: &str) -> EvalexprResult<String> {
-    eval_string_with_context_mut(string, &mut HashMapContext::<DefaultNumericTypes>::new())
-}
+// /// Evaluate the given expression string into a string.
+// ///
+// /// *See the [crate doc](index.html) for more examples and explanations of the expression format.*
+// pub fn eval_string(string: &str) -> EvalexprResult<String> {
+//     eval_string_with_context_mut(string, &mut HashMapContext::<DefaultNumericTypes>::new())
+// }
 
 // /// Evaluate the given expression string into an integer.
 // ///
@@ -154,19 +163,19 @@ pub fn eval_empty(string: &str) -> EvalexprResult<EmptyType> {
     eval_empty_with_context_mut(string, &mut HashMapContext::<DefaultNumericTypes>::new())
 }
 
-/// Evaluate the given expression string into a string with the given context.
-///
-/// *See the [crate doc](index.html) for more examples and explanations of the expression format.*
-pub fn eval_string_with_context<C: Context>(
-    string: &str,
-    context: &C,
-) -> EvalexprResult<String, C::NumericTypes> {
-    match eval_with_context(string, context) {
-        Ok(Value::String(string)) => Ok(string),
-        Ok(value) => Err(EvalexprError::expected_string(value)),
-        Err(error) => Err(error),
-    }
-}
+// /// Evaluate the given expression string into a string with the given context.
+// ///
+// /// *See the [crate doc](index.html) for more examples and explanations of the expression format.*
+// pub fn eval_string_with_context<C: Context>(
+//     string: &str,
+//     context: &C,
+// ) -> EvalexprResult<String, C::NumericTypes> {
+//     match eval_with_context(string, context) {
+//         Ok(Value::String(string)) => Ok(string),
+//         Ok(value) => Err(EvalexprError::expected_string(value)),
+//         Err(error) => Err(error),
+//     }
+// }
 
 // /// Evaluate the given expression string into an integer with the given context.
 // ///
@@ -256,19 +265,19 @@ pub fn eval_empty_with_context<C: Context>(
     }
 }
 
-/// Evaluate the given expression string into a string with the given mutable context.
-///
-/// *See the [crate doc](index.html) for more examples and explanations of the expression format.*
-pub fn eval_string_with_context_mut<C: ContextWithMutableVariables>(
-    string: &str,
-    context: &mut C,
-) -> EvalexprResult<String, C::NumericTypes> {
-    match eval_with_context_mut(string, context) {
-        Ok(Value::String(string)) => Ok(string),
-        Ok(value) => Err(EvalexprError::expected_string(value)),
-        Err(error) => Err(error),
-    }
-}
+// /// Evaluate the given expression string into a string with the given mutable context.
+// ///
+// /// *See the [crate doc](index.html) for more examples and explanations of the expression format.*
+// pub fn eval_string_with_context_mut<C: ContextWithMutableVariables>(
+//     string: &str,
+//     context: &mut C,
+// ) -> EvalexprResult<String, C::NumericTypes> {
+//     match eval_with_context_mut(string, context) {
+//         Ok(Value::String(string)) => Ok(string),
+//         Ok(value) => Err(EvalexprError::expected_string(value)),
+//         Err(error) => Err(error),
+//     }
+// }
 
 // /// Evaluate the given expression string into an integer with the given mutable context.
 // ///

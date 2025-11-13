@@ -571,6 +571,7 @@
 #![allow(clippy::get_first)]
 
 pub use crate::{
+    compiled_node::CompiledNode,
     context::{
         Context, ContextWithMutableFunctions, ContextWithMutableVariables, EmptyContext,
         EmptyContextWithBuiltinFunctions, HashMapContext, IterateVariablesContext,
@@ -591,6 +592,7 @@ pub use crate::{
     },
 };
 
+mod compiled_node;
 mod context;
 pub mod error;
 #[cfg(feature = "serde")]

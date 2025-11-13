@@ -21,10 +21,12 @@ pub const EMPTY_VALUE: () = ();
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Value<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes> {
-    /// A string value.
-    String(String),
+    // /// A string value.
+    // String(String),
     /// A float value.
     Float(NumericTypes::Float),
+    /// 2 float values.
+    Float2(NumericTypes::Float, NumericTypes::Float),
     // /// An integer value.
     // Int(NumericTypes::Int),
     /// A boolean value.
@@ -36,10 +38,10 @@ pub enum Value<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes> {
 }
 
 impl<NumericTypes: EvalexprNumericTypes> Value<NumericTypes> {
-    /// Returns true if `self` is a `Value::String`.
-    pub fn is_string(&self) -> bool {
-        matches!(self, Value::String(_))
-    }
+    // /// Returns true if `self` is a `Value::String`.
+    // pub fn is_string(&self) -> bool {
+    //     matches!(self, Value::String(_))
+    // }
     // /// Returns true if `self` is a `Value::Int`.
     // pub fn is_int(&self) -> bool {
     //     matches!(self, Value::Int(_))
@@ -48,6 +50,10 @@ impl<NumericTypes: EvalexprNumericTypes> Value<NumericTypes> {
     /// Returns true if `self` is a `Value::Float`.
     pub fn is_float(&self) -> bool {
         matches!(self, Value::Float(_))
+    }
+    /// Returns true if `self` is a `Value::Float2`.
+    pub fn is_float2(&self) -> bool {
+        matches!(self, Value::Float2(_,_))
     }
 
     // /// Returns true if `self` is a `Value::Int` or `Value::Float`.
@@ -70,21 +76,21 @@ impl<NumericTypes: EvalexprNumericTypes> Value<NumericTypes> {
         matches!(self, Value::Empty)
     }
 
-    /// Clones the value stored in `self` as `String`, or returns `Err` if `self` is not a `Value::String`.
-    pub fn as_string(&self) -> EvalexprResult<String, NumericTypes> {
-        match self {
-            Value::String(string) => Ok(string.clone()),
-            value => Err(EvalexprError::expected_string(value.clone())),
-        }
-    }
+    // /// Clones the value stored in `self` as `String`, or returns `Err` if `self` is not a `Value::String`.
+    // pub fn as_string(&self) -> EvalexprResult<String, NumericTypes> {
+    //     match self {
+    //         // Value::String(string) => Ok(string.clone()),
+    //         value => Err(EvalexprError::expected_string(value.clone())),
+    //     }
+    // }
 
-    /// Returns borrowes `str` from `self, or returns `Err` if `self` is not a `Value::String`.
-    pub fn as_str(&self) -> EvalexprResult<&str, NumericTypes> {
-        match self {
-            Value::String(string) => Ok(string.as_str()),
-            value => Err(EvalexprError::expected_string(value.clone())),
-        }
-    }
+    // /// Returns borrowes `str` from `self, or returns `Err` if `self` is not a `Value::String`.
+    // pub fn as_str(&self) -> EvalexprResult<&str, NumericTypes> {
+    //     match self {
+    //         Value::String(string) => Ok(string.as_str()),
+    //         value => Err(EvalexprError::expected_string(value.clone())),
+    //     }
+    // }
 
     // /// Clones the value stored in `self` as `IntType`, or returns `Err` if `self` is not a `Value::Int`.
     // pub fn as_int(&self) -> EvalexprResult<NumericTypes::Int, NumericTypes> {
@@ -98,6 +104,13 @@ impl<NumericTypes: EvalexprNumericTypes> Value<NumericTypes> {
     pub fn as_float(&self) -> EvalexprResult<NumericTypes::Float, NumericTypes> {
         match self {
             Value::Float(f) => Ok(*f),
+            value => Err(EvalexprError::expected_float(value.clone())),
+        }
+    }
+    /// Clones the value stored in  `self` as `(FloatType,FloatType)`, or returns `Err` if `self` is not a `Value::Float2`.
+    pub fn as_float2(&self) -> EvalexprResult<(NumericTypes::Float,NumericTypes::Float), NumericTypes> {
+        match self {
+            &Value::Float2(f1,f2) => Ok((f1,f2)),
             value => Err(EvalexprError::expected_float(value.clone())),
         }
     }
@@ -199,8 +212,9 @@ impl<NumericTypes: EvalexprNumericTypes> Value<NumericTypes> {
     /// Returns a string for the `str::from` built-in function.
     pub fn str_from(&self) -> String {
         match self {
-            Value::String(v) => v.to_string(),
+            // Value::String(v) => v.to_string(),
             Value::Float(v) => v.to_string(),
+            Value::Float2(f1,f2) => format!("{},{}",f1,f2),
             // Value::Int(v) => v.to_string(),
             Value::Boolean(v) => v.to_string(),
             Value::Tuple(_) => self.to_string(),
@@ -219,17 +233,17 @@ impl<NumericTypes: EvalexprNumericTypes> Value<NumericTypes> {
     // }
 }
 
-impl<NumericTypes: EvalexprNumericTypes> From<String> for Value<NumericTypes> {
-    fn from(string: String) -> Self {
-        Value::String(string)
-    }
-}
+// impl<NumericTypes: EvalexprNumericTypes> From<String> for Value<NumericTypes> {
+//     fn from(string: String) -> Self {
+//         Value::String(string)
+//     }
+// }
 
-impl<NumericTypes: EvalexprNumericTypes> From<&str> for Value<NumericTypes> {
-    fn from(string: &str) -> Self {
-        Value::String(string.to_string())
-    }
-}
+// impl<NumericTypes: EvalexprNumericTypes> From<&str> for Value<NumericTypes> {
+//     fn from(string: &str) -> Self {
+//         Value::String(string.to_string())
+//     }
+// }
 
 impl<NumericTypes: EvalexprNumericTypes> From<bool> for Value<NumericTypes> {
     fn from(boolean: bool) -> Self {
@@ -257,17 +271,17 @@ impl<NumericTypes: EvalexprNumericTypes> From<()> for Value<NumericTypes> {
     }
 }
 
-impl<NumericTypes: EvalexprNumericTypes> TryFrom<Value<NumericTypes>> for String {
-    type Error = EvalexprError<NumericTypes>;
+// impl<NumericTypes: EvalexprNumericTypes> TryFrom<Value<NumericTypes>> for String {
+//     type Error = EvalexprError<NumericTypes>;
 
-    fn try_from(value: Value<NumericTypes>) -> Result<Self, Self::Error> {
-        if let Value::String(value) = value {
-            Ok(value)
-        } else {
-            Err(EvalexprError::ExpectedString { actual: value })
-        }
-    }
-}
+//     fn try_from(value: Value<NumericTypes>) -> Result<Self, Self::Error> {
+//         if let Value::String(value) = value {
+//             Ok(value)
+//         } else {
+//             Err(EvalexprError::ExpectedString { actual: value })
+//         }
+//     }
+// }
 
 impl<NumericTypes: EvalexprNumericTypes> TryFrom<Value<NumericTypes>> for bool {
     type Error = EvalexprError<NumericTypes>;
@@ -313,10 +327,10 @@ mod tests {
 
     #[test]
     fn test_value_conversions() {
-        assert_eq!(
-            Value::<DefaultNumericTypes>::from("string").as_string(),
-            Ok(String::from("string"))
-        );
+        // assert_eq!(
+        //     Value::<DefaultNumericTypes>::from("string").as_string(),
+        //     Ok(String::from("string"))
+        // );
         // assert_eq!(Value::<DefaultNumericTypes>::from_int(3).as_int(), Ok(3));
         assert_eq!(
             Value::<DefaultNumericTypes>::from_float(3.3).as_float(),
@@ -334,7 +348,7 @@ mod tests {
 
     #[test]
     fn test_value_checks() {
-        assert!(Value::<DefaultNumericTypes>::from("string").is_string());
+        // assert!(Value::<DefaultNumericTypes>::from("string").is_string());
         // assert!(Value::<DefaultNumericTypes>::from_int(3).is_int());
         assert!(Value::<DefaultNumericTypes>::from_float(3.3).is_float());
         assert!(Value::<DefaultNumericTypes>::from(true).is_boolean());
@@ -343,10 +357,10 @@ mod tests {
 
     #[test]
     fn test_value_str_from() {
-        assert_eq!(
-            Value::<DefaultNumericTypes>::from("string").str_from(),
-            "string"
-        );
+        // assert_eq!(
+        //     Value::<DefaultNumericTypes>::from("string").str_from(),
+        //     "string"
+        // );
         assert_eq!(
             Value::<DefaultNumericTypes>::from_float(3.3).str_from(),
             "3.3"
@@ -356,7 +370,7 @@ mod tests {
         assert_eq!(Value::<DefaultNumericTypes>::from(()).str_from(), "()");
         assert_eq!(
             Value::<DefaultNumericTypes>::from(TupleType::from([
-                Value::<DefaultNumericTypes>::from("string"),
+                // Value::<DefaultNumericTypes>::from("string"),
                 Value::<DefaultNumericTypes>::from_float(3.3),
                 // Value::<DefaultNumericTypes>::from_int(3),
                 Value::<DefaultNumericTypes>::from(TupleType::from([
@@ -367,7 +381,7 @@ mod tests {
                 Value::<DefaultNumericTypes>::from(true),
             ]))
             .str_from(),
-            r#"("string", 3.3, (42, 4.2), (), true)"#
+            r#"(3.3, (42, 4.2), (), true)"#
         );
     }
 }

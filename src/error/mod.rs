@@ -57,6 +57,11 @@ pub enum EvalexprError<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes>
         /// The actual value.
         actual: Value<NumericTypes>,
     },
+    /// A float2 value was expected.
+    ExpectedFloat2 {
+        /// The actual value.
+        actual: Value<NumericTypes>,
+    },
 
     // /// A numeric value was expected.
     // /// Numeric values are the variants `Value::Int` and `Value::Float`.
@@ -248,6 +253,7 @@ pub enum EvalexprError<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes>
     CustomMessage(String),
 }
 
+
 impl<NumericTypes: EvalexprNumericTypes> EvalexprError<NumericTypes> {
     /// Construct a `WrongOperatorArgumentAmount` error.
     pub fn wrong_operator_argument_amount(actual: usize, expected: usize) -> Self {
@@ -295,6 +301,10 @@ impl<NumericTypes: EvalexprNumericTypes> EvalexprError<NumericTypes> {
 
     /// Constructs `EvalexprError::ExpectedFloat{actual}`.
     pub fn expected_float(actual: Value<NumericTypes>) -> Self {
+        EvalexprError::ExpectedFloat { actual }
+    }
+    /// Constructs `EvalexprError::ExpectedFloat2{actual}`.
+    pub fn expected_float2(actual: Value<NumericTypes>) -> Self {
         EvalexprError::ExpectedFloat { actual }
     }
 
@@ -348,9 +358,10 @@ impl<NumericTypes: EvalexprNumericTypes> EvalexprError<NumericTypes> {
         actual: Value<NumericTypes>,
     ) -> Self {
         match ValueType::from(expected) {
-            ValueType::String => Self::expected_string(actual),
+            // ValueType::String => Self::expected_string(actual),
             // ValueType::Int => Self::expected_int(actual),
             ValueType::Float => Self::expected_float(actual),
+            ValueType::Float2 => Self::expected_float2(actual),
             ValueType::Boolean => Self::expected_boolean(actual),
             ValueType::Tuple => Self::expected_tuple(actual),
             ValueType::Empty => Self::expected_empty(actual),
@@ -369,6 +380,8 @@ impl<NumericTypes: EvalexprNumericTypes> EvalexprError<NumericTypes> {
         EvalexprError::InvalidRegex { regex, message }
     }
 }
+
+
 
 /// Returns `Ok(())` if the actual and expected parameters are equal, and `Err(Error::WrongOperatorArgumentAmount)` otherwise.
 pub(crate) fn expect_operator_argument_amount<NumericTypes: EvalexprNumericTypes>(
@@ -398,15 +411,15 @@ pub fn expect_function_argument_amount<NumericTypes: EvalexprNumericTypes>(
     }
 }
 
-/// Returns `Ok(())` if the given value is a string or a numeric
-pub fn expect_float_or_string<NumericTypes: EvalexprNumericTypes>(
-    actual: &Value<NumericTypes>,
-) -> EvalexprResult<(), NumericTypes> {
-    match actual {
-        Value::String(_) | Value::Float(_) => Ok(()),
-        _ => Err(EvalexprError::expected_number_or_string(actual.clone())),
-    }
-}
+// /// Returns `Ok(())` if the given value is a string or a numeric
+// pub fn expect_float_or_string<NumericTypes: EvalexprNumericTypes>(
+//     actual: &Value<NumericTypes>,
+// ) -> EvalexprResult<(), NumericTypes> {
+//     match actual {
+//         Value::String(_) | Value::Float(_) => Ok(()),
+//         _ => Err(EvalexprError::expected_number_or_string(actual.clone())),
+//     }
+// }
 
 impl<NumericTypes: EvalexprNumericTypes> std::error::Error for EvalexprError<NumericTypes> {}
 
@@ -437,13 +450,13 @@ mod tests {
         //         expected: vec![ValueType::String]
         //     }
         // );
-        assert_eq!(
-            EvalexprError::expected_type(
-                &Value::<DefaultNumericTypes>::String("abc".to_string()),
-                Value::Empty
-            ),
-            EvalexprError::expected_string(Value::Empty)
-        );
+        // assert_eq!(
+        //     EvalexprError::expected_type(
+        //         &Value::<DefaultNumericTypes>::String("abc".to_string()),
+        //         Value::Empty
+        //     ),
+        //     EvalexprError::expected_string(Value::Empty)
+        // );
         assert_eq!(
             EvalexprError::expected_type(
                 &Value::<DefaultNumericTypes>::Boolean(false),
@@ -458,12 +471,12 @@ mod tests {
             ),
             EvalexprError::expected_tuple(Value::Empty)
         );
-        assert_eq!(
-            EvalexprError::expected_type(
-                &Value::<DefaultNumericTypes>::Empty,
-                Value::String("abc".to_string())
-            ),
-            EvalexprError::expected_empty(Value::String("abc".to_string()))
-        );
+        // assert_eq!(
+        //     EvalexprError::expected_type(
+        //         &Value::<DefaultNumericTypes>::Empty,
+        //         Value::String("abc".to_string())
+        //     ),
+        //     EvalexprError::expected_empty(Value::String("abc".to_string()))
+        // );
     }
 }

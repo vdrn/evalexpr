@@ -178,7 +178,7 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
             Not | Neg | RootNode => Some(1),
             Const { .. } => Some(0),
             VariableIdentifierWrite { .. } | VariableIdentifierRead { .. } => Some(0),
-            FunctionIdentifier { .. } => Some(1),
+            FunctionIdentifier { .. } => Some(99),
         }
     }
 
@@ -187,274 +187,285 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
         self.max_argument_amount() == Some(1) && *self != Operator::RootNode
     }
 
-    /// Evaluates the operator with the given arguments and context.
-    pub fn eval<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        arguments: &[Value<NumericTypes>],
-        context: &C,
-    ) -> EvalexprResultValue<NumericTypes> {
-        use crate::operator::Operator::*;
-        match self {
-            RootNode => {
-                if let Some(first) = arguments.first() {
-                    Ok(first.clone())
-                } else {
-                    Ok(Value::Empty)
-                }
-            },
-            Add => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_float_or_string(&arguments[0])?;
-                expect_float_or_string(&arguments[1])?;
+    // /// Evaluates the operator with the given arguments and context.
+    // pub fn eval<C: Context<NumericTypes = NumericTypes>>(
+    //     &self,
+    //     arguments: &[Value<NumericTypes>],
+    //     context: &C,
+    // ) -> EvalexprResultValue<NumericTypes> {
+    //     use crate::operator::Operator::*;
+    //     match self {
+    //         RootNode => {
+    //             if let Some(first) = arguments.first() {
+    //                 Ok(first.clone())
+    //             } else {
+    //                 Ok(Value::Empty)
+    //             }
+    //         },
+    //         Add => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             // expect_float_or_string(&arguments[0])?;
+    //             // expect_float_or_string(&arguments[1])?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_float(), arguments[1].as_float()) {
-                    Ok(Value::Float(a + b))
-                } else if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string())
-                {
-                    let mut result = String::with_capacity(a.len() + b.len());
-                    result.push_str(&a);
-                    result.push_str(&b);
-                    Ok(Value::String(result))
-                } else {
-                    Err(EvalexprError::wrong_type_combination(
-                        self.clone(),
-                        vec![
-                            arguments.get(0).unwrap().into(),
-                            arguments.get(1).unwrap().into(),
-                        ],
-                    ))
-                }
-            },
-            Sub => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                let a = arguments[0].as_float()?;
-                let b = arguments[1].as_float()?;
+    //             if let (Ok(a), Ok(b)) = (arguments[0].as_float(), arguments[1].as_float()) {
+    //                 Ok(Value::Float(a + b))
+    //             // } 
+    //             // else if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string())
+    //             // {
+    //             //     let mut result = String::with_capacity(a.len() + b.len());
+    //             //     result.push_str(&a);
+    //             //     result.push_str(&b);
+    //             //     Ok(Value::String(result))
+    //             } else {
+    //                 Err(EvalexprError::wrong_type_combination(
+    //                     self.clone(),
+    //                     vec![
+    //                         arguments.get(0).unwrap().into(),
+    //                         arguments.get(1).unwrap().into(),
+    //                     ],
+    //                 ))
+    //             }
+    //         },
+    //         Sub => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             let a = arguments[0].as_float()?;
+    //             let b = arguments[1].as_float()?;
 
-                Ok(Value::Float(a - b))
-            },
-            Neg => {
-                expect_operator_argument_amount(arguments.len(), 1)?;
-                let a = arguments[0].as_float()?;
+    //             Ok(Value::Float(a - b))
+    //         },
+    //         Neg => {
+    //             expect_operator_argument_amount(arguments.len(), 1)?;
+    //             let a = arguments[0].as_float()?;
 
-                Ok(Value::Float(-a))
-            },
-            Mul => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                let a = arguments[0].as_float()?;
-                let b = arguments[1].as_float()?;
+    //             Ok(Value::Float(-a))
+    //         },
+    //         Mul => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             let a = arguments[0].as_float()?;
+    //             let b = arguments[1].as_float()?;
 
-                Ok(Value::Float(a * b))
-            },
-            Div => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                let a = arguments[0].as_float()?;
-                let b = arguments[1].as_float()?;
+    //             Ok(Value::Float(a * b))
+    //         },
+    //         Div => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             let a = arguments[0].as_float()?;
+    //             let b = arguments[1].as_float()?;
 
-                Ok(Value::Float(a / b))
-            },
-            Mod => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                let a = arguments[0].as_float()?;
-                let b = arguments[1].as_float()?;
+    //             Ok(Value::Float(a / b))
+    //         },
+    //         Mod => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             let a = arguments[0].as_float()?;
+    //             let b = arguments[1].as_float()?;
 
-                Ok(Value::Float(a % b))
-            },
-            Exp => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                let a = arguments[0].as_float()?;
-                let b = arguments[1].as_float()?;
+    //             Ok(Value::Float(a % b))
+    //         },
+    //         Exp => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             let a = arguments[0].as_float()?;
+    //             let b = arguments[1].as_float()?;
 
-                Ok(Value::Float(a.pow(&b)))
-            },
-            Eq => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
+    //             Ok(Value::Float(a.pow(&b)))
+    //         },
+    //         Eq => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
 
-                Ok(Value::Boolean(arguments[0] == arguments[1]))
-            },
-            Neq => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
+    //             Ok(Value::Boolean(arguments[0] == arguments[1]))
+    //         },
+    //         Neq => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
 
-                Ok(Value::Boolean(arguments[0] != arguments[1]))
-            },
-            Gt => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_float_or_string(&arguments[0])?;
-                expect_float_or_string(&arguments[1])?;
+    //             Ok(Value::Boolean(arguments[0] != arguments[1]))
+    //         },
+    //         Gt => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             // expect_float_or_string(&arguments[0])?;
+    //             // expect_float_or_string(&arguments[1])?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
-                    Ok(Value::Boolean(a > b))
-                } else {
-                    Ok(Value::Boolean(
-                        arguments[0].as_float()? > arguments[1].as_float()?,
-                    ))
-                }
-            },
-            Lt => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_float_or_string(&arguments[0])?;
-                expect_float_or_string(&arguments[1])?;
+    //             // if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
+    //             //     Ok(Value::Boolean(a > b))
+    //             // } else {
+    //                 Ok(Value::Boolean(
+    //                     arguments[0].as_float()? > arguments[1].as_float()?,
+    //                 ))
+    //             // }
+    //         },
+    //         Lt => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             // expect_float_or_string(&arguments[0])?;
+    //             // expect_float_or_string(&arguments[1])?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
-                    Ok(Value::Boolean(a < b))
-                } else {
-                    Ok(Value::Boolean(
-                        arguments[0].as_float()? < arguments[1].as_float()?,
-                    ))
-                }
-            },
-            Geq => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_float_or_string(&arguments[0])?;
-                expect_float_or_string(&arguments[1])?;
+    //             // if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
+    //             //     Ok(Value::Boolean(a < b))
+    //             // } else {
+    //                 Ok(Value::Boolean(
+    //                     arguments[0].as_float()? < arguments[1].as_float()?,
+    //                 ))
+    //             // }
+    //         },
+    //         Geq => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             // expect_float_or_string(&arguments[0])?;
+    //             // expect_float_or_string(&arguments[1])?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
-                    Ok(Value::Boolean(a >= b))
-                } else {
-                    Ok(Value::Boolean(
-                        arguments[0].as_float()? >= arguments[1].as_float()?,
-                    ))
-                }
-            },
-            Leq => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                expect_float_or_string(&arguments[0])?;
-                expect_float_or_string(&arguments[1])?;
+    //             // if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
+    //             //     Ok(Value::Boolean(a >= b))
+    //             // } else {
+    //                 Ok(Value::Boolean(
+    //                     arguments[0].as_float()? >= arguments[1].as_float()?,
+    //                 ))
+    //             // }
+    //         },
+    //         Leq => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             // expect_float_or_string(&arguments[0])?;
+    //             // expect_float_or_string(&arguments[1])?;
 
-                if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
-                    Ok(Value::Boolean(a <= b))
-                } else {
-                    Ok(Value::Boolean(
-                        arguments[0].as_float()? <= arguments[1].as_float()?,
-                    ))
-                }
-            },
-            And => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                let a = arguments[0].as_boolean()?;
-                let b = arguments[1].as_boolean()?;
+    //             // if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string()) {
+    //             //     Ok(Value::Boolean(a <= b))
+    //             // } else {
+    //                 Ok(Value::Boolean(
+    //                     arguments[0].as_float()? <= arguments[1].as_float()?,
+    //                 ))
+    //             // }
+    //         },
+    //         And => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             let a = arguments[0].as_boolean()?;
+    //             let b = arguments[1].as_boolean()?;
 
-                Ok(Value::Boolean(a && b))
-            },
-            Or => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                let a = arguments[0].as_boolean()?;
-                let b = arguments[1].as_boolean()?;
+    //             Ok(Value::Boolean(a && b))
+    //         },
+    //         Or => {
+    //             expect_operator_argument_amount(arguments.len(), 2)?;
+    //             let a = arguments[0].as_boolean()?;
+    //             let b = arguments[1].as_boolean()?;
 
-                Ok(Value::Boolean(a || b))
-            },
-            Not => {
-                expect_operator_argument_amount(arguments.len(), 1)?;
-                let a = arguments[0].as_boolean()?;
+    //             Ok(Value::Boolean(a || b))
+    //         },
+    //         Not => {
+    //             expect_operator_argument_amount(arguments.len(), 1)?;
+    //             let a = arguments[0].as_boolean()?;
 
-                Ok(Value::Boolean(!a))
-            },
-            Assign | AddAssign | SubAssign | MulAssign | DivAssign | ModAssign | ExpAssign
-            | AndAssign | OrAssign => Err(EvalexprError::ContextNotMutable),
-            Tuple => Ok(Value::Tuple(arguments.into())),
-            Chain => {
-                if arguments.is_empty() {
-                    return Err(EvalexprError::wrong_operator_argument_amount(0, 1));
-                }
+    //             Ok(Value::Boolean(!a))
+    //         },
+    //         Assign | AddAssign | SubAssign | MulAssign | DivAssign | ModAssign | ExpAssign
+    //         | AndAssign | OrAssign => Err(EvalexprError::ContextNotMutable),
+    //         Tuple => {
+    //             if let (Some(Value::Float(f1)), Some(Value::Float(f2))) =
+    //                 (arguments.get(0), arguments.get(1))
+    //             {
+    //                 Ok(Value::Float2(*f1, *f2))
+    //             } else {
+    //                 Ok(Value::Tuple(arguments.into()))
+    //             }
+    //         },
+    //         Chain => {
+    //             if arguments.is_empty() {
+    //                 return Err(EvalexprError::wrong_operator_argument_amount(0, 1));
+    //             }
 
-                Ok(arguments.last().cloned().unwrap_or(Value::Empty))
-            },
-            Const { value } => {
-                expect_operator_argument_amount(arguments.len(), 0)?;
+    //             Ok(arguments.last().cloned().unwrap_or(Value::Empty))
+    //         },
+    //         Const { value } => {
+    //             expect_operator_argument_amount(arguments.len(), 0)?;
 
-                Ok(value.clone())
-            },
-            VariableIdentifierWrite { identifier } => {
-                expect_operator_argument_amount(arguments.len(), 0)?;
+    //             Ok(value.clone())
+    //         },
+    //         VariableIdentifierWrite { identifier } => {
+    //             expect_operator_argument_amount(arguments.len(), 0)?;
+    //             todo!()
 
-                Ok(identifier.clone().into())
-            },
-            VariableIdentifierRead { identifier } => {
-                expect_operator_argument_amount(arguments.len(), 0)?;
+    //             // Ok(identifier.clone().into())
+    //         },
+    //         VariableIdentifierRead { identifier } => {
+    //             expect_operator_argument_amount(arguments.len(), 0)?;
 
-                if let Some(value) = context.get_value(identifier).cloned() {
-                    Ok(value)
-                } else {
-                    match context.call_function(context, identifier, &Value::Empty) {
-                        Err(EvalexprError::FunctionIdentifierNotFound(_))
-                            if !context.are_builtin_functions_disabled() =>
-                        {
-                            Err(EvalexprError::VariableIdentifierNotFound(
-                                identifier.clone(),
-                            ))
-                        },
-                        result => result,
-                    }
-                }
-            },
-            FunctionIdentifier { identifier } => {
-                expect_operator_argument_amount(arguments.len(), 1)?;
-                let arguments = &arguments[0];
+    //             if let Some(value) = context.get_value(identifier).cloned() {
+    //                 Ok(value)
+    //             } else {
+    //                 match context.call_function(context, identifier, &[Value::Empty]) {
+    //                     Err(EvalexprError::FunctionIdentifierNotFound(_))
+    //                         if !context.are_builtin_functions_disabled() =>
+    //                     {
+    //                         Err(EvalexprError::VariableIdentifierNotFound(
+    //                             identifier.clone(),
+    //                         ))
+    //                     },
+    //                     result => result,
+    //                 }
+    //             }
+    //         },
+    //         FunctionIdentifier { identifier } => {
+    //             // expect_operator_argument_amount(arguments.len(), 1)?;
+    //             // let arguments = &arguments[0];
 
-                match context.call_function(context, identifier, arguments) {
-                    Err(EvalexprError::FunctionIdentifierNotFound(_))
-                        if !context.are_builtin_functions_disabled() =>
-                    {
-                        if let Some(builtin_function) = builtin_function(identifier) {
-                            builtin_function.call(context, arguments)
-                        } else {
-                            Err(EvalexprError::FunctionIdentifierNotFound(
-                                identifier.clone(),
-                            ))
-                        }
-                    },
-                    result => result,
-                }
-            },
-        }
-    }
+    //             match context.call_function(context, identifier, arguments) {
+    //                 Err(EvalexprError::FunctionIdentifierNotFound(_))
+    //                     if !context.are_builtin_functions_disabled() =>
+    //                 {
+    //                     if let Some(builtin_function) = builtin_function(identifier) {
+    //                         builtin_function.call(context, arguments)
+    //                     } else {
+    //                         Err(EvalexprError::FunctionIdentifierNotFound(
+    //                             identifier.clone(),
+    //                         ))
+    //                     }
+    //                 },
+    //                 result => result,
+    //             }
+    //         },
+    //     }
+    // }
 
-    /// Evaluates the operator with the given arguments and mutable context.
-    pub(crate) fn eval_mut<
-        C: ContextWithMutableVariables + Context<NumericTypes = NumericTypes>,
-    >(
-        &self,
-        arguments: &[Value<NumericTypes>],
-        context: &mut C,
-    ) -> EvalexprResultValue<C::NumericTypes> {
-        use crate::operator::Operator::*;
-        match self {
-            Assign => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
-                let target = arguments[0].as_str()?;
-                context.set_value(target, arguments[1].clone())?;
+    // /// Evaluates the operator with the given arguments and mutable context.
+    // pub(crate) fn eval_mut<
+    //     C: ContextWithMutableVariables + Context<NumericTypes = NumericTypes>,
+    // >(
+    //     &self,
+    //     arguments: &[Value<NumericTypes>],
+    //     context: &mut C,
+    // ) -> EvalexprResultValue<C::NumericTypes> {
+    //   todo!()
+    //     // use crate::operator::Operator::*;
+    //     // match self {
+    //     //     Assign => {
+    //     //         expect_operator_argument_amount(arguments.len(), 2)?;
+    //     //         let target = arguments[0].as_str()?;
+    //     //         context.set_value(target, arguments[1].clone())?;
 
-                Ok(Value::Empty)
-            },
-            AddAssign | SubAssign | MulAssign | DivAssign | ModAssign | ExpAssign | AndAssign
-            | OrAssign => {
-                expect_operator_argument_amount(arguments.len(), 2)?;
+    //     //         Ok(Value::Empty)
+    //     //     },
+    //     //     AddAssign | SubAssign | MulAssign | DivAssign | ModAssign | ExpAssign | AndAssign
+    //     //     | OrAssign => {
+    //     //         expect_operator_argument_amount(arguments.len(), 2)?;
 
-                let target = arguments[0].as_str()?;
-                let left_value = Operator::VariableIdentifierRead {
-                    identifier: target.to_string(),
-                }
-                .eval(&Vec::new(), context)?;
-                let arguments = vec![left_value, arguments[1].clone()];
+    //     //         let target = arguments[0].as_str()?;
+    //     //         let left_value = Operator::VariableIdentifierRead {
+    //     //             identifier: target.to_string(),
+    //     //         }
+    //     //         .eval(&Vec::new(), context)?;
+    //     //         let arguments = vec![left_value, arguments[1].clone()];
 
-                let result = match self {
-                    AddAssign => Operator::Add.eval(&arguments, context),
-                    SubAssign => Operator::Sub.eval(&arguments, context),
-                    MulAssign => Operator::Mul.eval(&arguments, context),
-                    DivAssign => Operator::Div.eval(&arguments, context),
-                    ModAssign => Operator::Mod.eval(&arguments, context),
-                    ExpAssign => Operator::Exp.eval(&arguments, context),
-                    AndAssign => Operator::And.eval(&arguments, context),
-                    OrAssign => Operator::Or.eval(&arguments, context),
-                    _ => unreachable!(
-                        "Forgot to add a match arm for an assign operation: {}",
-                        self
-                    ),
-                }?;
-                context.set_value(target, result)?;
+    //     //         let result = match self {
+    //     //             AddAssign => Operator::Add.eval(&arguments, context),
+    //     //             SubAssign => Operator::Sub.eval(&arguments, context),
+    //     //             MulAssign => Operator::Mul.eval(&arguments, context),
+    //     //             DivAssign => Operator::Div.eval(&arguments, context),
+    //     //             ModAssign => Operator::Mod.eval(&arguments, context),
+    //     //             ExpAssign => Operator::Exp.eval(&arguments, context),
+    //     //             AndAssign => Operator::And.eval(&arguments, context),
+    //     //             OrAssign => Operator::Or.eval(&arguments, context),
+    //     //             _ => unreachable!(
+    //     //                 "Forgot to add a match arm for an assign operation: {}",
+    //     //                 self
+    //     //             ),
+    //     //         }?;
+    //     //         context.set_value(target, result)?;
 
-                Ok(Value::Empty)
-            },
-            _ => self.eval(arguments, context),
-        }
-    }
+    //     //         Ok(Value::Empty)
+    //     //     },
+    //     //     _ => self.eval(arguments, context),
+    //     // }
+    // }
 }
