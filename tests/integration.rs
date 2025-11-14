@@ -1,5 +1,6 @@
 #![cfg(not(tarpaulin_include))]
 
+use evalexpr::istr;
 use evalexpr::{error::*, *};
 use std::convert::TryFrom;
 
@@ -114,15 +115,15 @@ fn test_boolean_examples() {
 fn test_with_context() {
     let mut context = HashMapContext::<DefaultNumericTypes>::new();
     context
-        .set_value("tr".into(), Value::Boolean(true))
+        .set_value(istr("tr"), Value::Boolean(true))
         .unwrap();
     context
-        .set_value("fa".into(), Value::Boolean(false))
+        .set_value(istr("fa"), Value::Boolean(false))
         .unwrap();
-    context.set_value("five".into(), Value::Float(5.0)).unwrap();
-    context.set_value("six".into(), Value::Float(6.0)).unwrap();
-    context.set_value("half".into(), Value::Float(0.5)).unwrap();
-    context.set_value("zero".into(), Value::Float(0.0)).unwrap();
+    context.set_value(istr("five"), Value::Float(5.0)).unwrap();
+    context.set_value(istr("six"), Value::Float(6.0)).unwrap();
+    context.set_value(istr("half"), Value::Float(0.5)).unwrap();
+    context.set_value(istr("zero"), Value::Float(0.0)).unwrap();
 
     assert_eq!(eval_with_context("tr", &context), Ok(Value::Boolean(true)));
     assert_eq!(eval_with_context("fa", &context), Ok(Value::Boolean(false)));
@@ -143,9 +144,9 @@ fn test_with_context() {
         Ok(Value::Boolean(true))
     );
 
-    assert_eq!(context.remove_value("half"), Ok(Some(Value::Float(0.5))));
-    assert_eq!(context.remove_value("zero"), Ok(Some(Value::Float(0.0))));
-    assert_eq!(context.remove_value("zero"), Ok(None));
+    assert_eq!(context.remove_value(istr("half")), Ok(Some(Value::Float(0.5))));
+    assert_eq!(context.remove_value(istr("zero")), Ok(Some(Value::Float(0.0))));
+    assert_eq!(context.remove_value(istr("zero")), Ok(None));
     assert_eq!(
         eval_with_context("zero", &context),
         Err(EvalexprError::VariableIdentifierNotFound(
@@ -159,8 +160,8 @@ fn test_functions() {
     let mut context = HashMapContext::<DefaultNumericTypes>::new();
     context
         .set_function(
-            "sub2".to_string(),
-            Function::new(|_, arguments| {
+            istr("sub2"),
+            Function::new(|_,_, arguments| {
                 // if let Value::Int(int) = argument {
                 //     Ok(Value::Int(int - 2))
                 // } else
@@ -173,7 +174,7 @@ fn test_functions() {
         )
         .unwrap();
     context
-        .set_value("five", Value::Float(5.0))
+        .set_value(istr("five"), Value::Float(5.0))
         .unwrap();
 
     assert_eq!(eval_with_context("sub2 5", &context), Ok(Value::Float(3.0)));
@@ -191,8 +192,8 @@ fn test_n_ary_functions() {
     let mut context = HashMapContext::<DefaultNumericTypes>::new();
     context
         .set_function(
-            "sub2".into(),
-            Function::new(|_, argument| {
+            istr("sub2"),
+            Function::new(|_, _, argument| {
                 // if let Value::Int(int) = argument {
                 //     Ok(Value::Int(int - 2))
                 // } else 
@@ -206,8 +207,8 @@ fn test_n_ary_functions() {
         .unwrap();
     context
         .set_function(
-            "avg".into(),
-            Function::new(|_, arguments| {
+            istr("avg"),
+            Function::new(|_, _, arguments| {
               expect_function_argument_amount(arguments.len(), 2)?;
                 arguments[0].as_float()?;
                 arguments[1].as_float()?;
@@ -224,8 +225,8 @@ fn test_n_ary_functions() {
         .unwrap();
     context
         .set_function(
-            "muladd".into(),
-            Function::new(|_, arguments| {
+            istr("muladd"),
+            Function::new(|_, _, arguments| {
               expect_function_argument_amount(arguments.len(), 3)?;
                 arguments[0].as_float()?;
                 arguments[1].as_float()?;
@@ -246,8 +247,8 @@ fn test_n_ary_functions() {
         .unwrap();
     context
         .set_function(
-            "count".into(),
-            Function::new(|_, arguments| match &arguments[0] {
+            istr("count"),
+            Function::new(|_, _, arguments| match &arguments[0] {
                 Value::Tuple(tuple) => Ok(Value::from_float(
                     DefaultNumericTypes::int_as_float(
                     &(tuple.len() as <DefaultNumericTypes as EvalexprNumericTypes>::Int))
@@ -258,10 +259,10 @@ fn test_n_ary_functions() {
         )
         .unwrap();
     context
-        .set_value("five", Value::Float(5.0))
+        .set_value(istr("five"), Value::Float(5.0))
         .unwrap();
     context
-        .set_function("function_four".into(), Function::new(|_, _| Ok(Value::Float(4.0))))
+        .set_function(istr("function_four"), Function::new(|_,_, _| Ok(Value::Float(4.0))))
         .unwrap();
 
     assert_eq!(eval_with_context("avg(7, 5)", &context), Ok(Value::Float(6.0)));
@@ -300,8 +301,8 @@ fn test_capturing_functions() {
     let three = 3;
     context
         .set_function(
-            "mult_3".into(),
-            Function::new(move |_, argument| {
+            istr("mult_3"),
+            Function::new(move |_,_, argument| {
                 // if let Value::Int(int) = argument {
                 //     Ok(Value::Int(int * three))
                 // } else 
@@ -319,8 +320,8 @@ fn test_capturing_functions() {
     let four = 4.0;
     context
         .set_function(
-            "function_four".into(),
-            Function::new(move |_, _| Ok(Value::Float(four))),
+            istr("function_four"),
+            Function::new(move |_, _, _| Ok(Value::Float(four))),
         )
         .unwrap();
 
@@ -926,6 +927,7 @@ fn test_shortcut_functions() {
     //         .eval_string_with_context_mut(&mut context),
     //     Err(EvalexprError::VariableIdentifierNotFound("3..3".to_owned()))
     // );
+    let mut stack = Stack::new();
 
     assert_eq!(
         build_operator_tree::<DefaultNumericTypes>("3.3")
@@ -942,25 +944,25 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("3.3")
             .unwrap()
-            .eval_float_with_context(&context),
+            .eval_float_with_context(&mut stack, &context),
         Ok(3.3)
     );
     assert_eq!(
         build_operator_tree("asd")
             .unwrap()
-            .eval_float_with_context(&context),
+            .eval_float_with_context(&mut stack, &context),
         Err(EvalexprError::VariableIdentifierNotFound("asd".to_owned()))
     );
     assert_eq!(
         build_operator_tree("3.3")
             .unwrap()
-            .eval_float_with_context_mut(&mut context),
+            .eval_float_with_context_mut(&mut stack, &mut context),
         Ok(3.3)
     );
     assert_eq!(
         build_operator_tree("asd")
             .unwrap()
-            .eval_float_with_context_mut(&mut context),
+            .eval_float_with_context_mut(&mut stack, &mut context),
         Err(EvalexprError::VariableIdentifierNotFound("asd".to_owned()))
     );
 
@@ -988,13 +990,13 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("3")
             .unwrap()
-            .eval_float_with_context(&context),
+            .eval_float_with_context(&mut stack, &context),
         Ok(3.0)
     );
     assert_eq!(
         build_operator_tree("true")
             .unwrap()
-            .eval_float_with_context(&context),
+            .eval_float_with_context(&mut stack, &context),
         Err(EvalexprError::ExpectedFloat {
             actual: Value::Boolean(true)
         })
@@ -1002,19 +1004,19 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("abc")
             .unwrap()
-            .eval_float_with_context(&context),
+            .eval_float_with_context(&mut stack, &context),
         Err(EvalexprError::VariableIdentifierNotFound("abc".to_owned()))
     );
     assert_eq!(
         build_operator_tree("3")
             .unwrap()
-            .eval_float_with_context_mut(&mut context),
+            .eval_float_with_context_mut(&mut stack, &mut context),
         Ok(3.0)
     );
     assert_eq!(
         build_operator_tree("true")
             .unwrap()
-            .eval_float_with_context_mut(&mut context),
+            .eval_float_with_context_mut(&mut stack, &mut context),
         Err(EvalexprError::ExpectedFloat {
             actual: Value::Boolean(true)
         })
@@ -1022,7 +1024,7 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("abc")
             .unwrap()
-            .eval_float_with_context_mut(&mut context),
+            .eval_float_with_context_mut(&mut stack, &mut context),
         Err(EvalexprError::VariableIdentifierNotFound("abc".to_owned()))
     );
 
@@ -1051,13 +1053,13 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("true")
             .unwrap()
-            .eval_boolean_with_context(&context),
+            .eval_boolean_with_context(&mut stack, &context),
         Ok(true)
     );
     assert_eq!(
         build_operator_tree("4")
             .unwrap()
-            .eval_boolean_with_context(&context),
+            .eval_boolean_with_context(&mut stack, &context),
         Err(EvalexprError::ExpectedBoolean {
             actual: Value::Float(4.0)
         })
@@ -1065,7 +1067,7 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("trueee")
             .unwrap()
-            .eval_boolean_with_context(&context),
+            .eval_boolean_with_context(&mut stack, &context),
         Err(EvalexprError::VariableIdentifierNotFound(
             "trueee".to_owned()
         ))
@@ -1073,13 +1075,13 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("true")
             .unwrap()
-            .eval_boolean_with_context_mut(&mut context),
+            .eval_boolean_with_context_mut(&mut stack, &mut context),
         Ok(true)
     );
     assert_eq!(
         build_operator_tree("4")
             .unwrap()
-            .eval_boolean_with_context_mut(&mut context),
+            .eval_boolean_with_context_mut(&mut stack, &mut context),
         Err(EvalexprError::ExpectedBoolean {
             actual: Value::Float(4.0)
         })
@@ -1087,7 +1089,7 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("trueee")
             .unwrap()
-            .eval_boolean_with_context_mut(&mut context),
+            .eval_boolean_with_context_mut(&mut stack, &mut context),
         Err(EvalexprError::VariableIdentifierNotFound(
             "trueee".to_owned()
         ))
@@ -1116,13 +1118,13 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("3,3")
             .unwrap()
-            .eval_tuple_with_context(&context),
+            .eval_tuple_with_context(&mut stack, &context),
         Ok(vec![Value::Float(3.0), Value::Float(3.0)])
     );
     assert_eq!(
         build_operator_tree("33")
             .unwrap()
-            .eval_tuple_with_context(&context),
+            .eval_tuple_with_context(&mut stack, &context),
         Err(EvalexprError::ExpectedTuple {
             actual: Value::Float(33.0)
         })
@@ -1130,19 +1132,19 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("3a3")
             .unwrap()
-            .eval_tuple_with_context(&context),
+            .eval_tuple_with_context(&mut stack, &context),
         Err(EvalexprError::VariableIdentifierNotFound("3a3".to_owned()))
     );
     assert_eq!(
         build_operator_tree("3,3")
             .unwrap()
-            .eval_tuple_with_context_mut(&mut context),
+            .eval_tuple_with_context_mut(&mut stack, &mut context),
         Ok(vec![Value::Float(3.0), Value::Float(3.0)])
     );
     assert_eq!(
         build_operator_tree("33")
             .unwrap()
-            .eval_tuple_with_context_mut(&mut context),
+            .eval_tuple_with_context_mut(&mut stack, &mut context),
         Err(EvalexprError::ExpectedTuple {
             actual: Value::Float(33.0)
         })
@@ -1150,7 +1152,7 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("3a3")
             .unwrap()
-            .eval_tuple_with_context_mut(&mut context),
+            .eval_tuple_with_context_mut(&mut stack, &mut context),
         Err(EvalexprError::VariableIdentifierNotFound("3a3".to_owned()))
     );
 
@@ -1183,19 +1185,19 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("")
             .unwrap()
-            .eval_empty_with_context(&context),
+            .eval_empty_with_context(&mut stack, &context),
         Ok(EMPTY_VALUE)
     );
     assert_eq!(
         build_operator_tree("()")
             .unwrap()
-            .eval_empty_with_context(&context),
+            .eval_empty_with_context(&mut stack, &context),
         Ok(EMPTY_VALUE)
     );
     assert_eq!(
         build_operator_tree("(,)")
             .unwrap()
-            .eval_empty_with_context(&context),
+            .eval_empty_with_context(&mut stack, &context),
         Err(EvalexprError::ExpectedEmpty {
             actual: Value::Tuple(vec![Value::Empty, Value::Empty])
         })
@@ -1203,25 +1205,25 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("xaq")
             .unwrap()
-            .eval_empty_with_context(&context),
+            .eval_empty_with_context(&mut stack, &context),
         Err(EvalexprError::VariableIdentifierNotFound("xaq".to_owned()))
     );
     assert_eq!(
         build_operator_tree("")
             .unwrap()
-            .eval_empty_with_context_mut(&mut context),
+            .eval_empty_with_context_mut(&mut stack, &mut context),
         Ok(EMPTY_VALUE)
     );
     assert_eq!(
         build_operator_tree("()")
             .unwrap()
-            .eval_empty_with_context_mut(&mut context),
+            .eval_empty_with_context_mut(&mut stack, &mut context),
         Ok(EMPTY_VALUE)
     );
     assert_eq!(
         build_operator_tree("(,)")
             .unwrap()
-            .eval_empty_with_context_mut(&mut context),
+            .eval_empty_with_context_mut(&mut stack, &mut context),
         Err(EvalexprError::ExpectedEmpty {
             actual: Value::Tuple(vec![Value::Empty, Value::Empty])
         })
@@ -1229,7 +1231,7 @@ fn test_shortcut_functions() {
     assert_eq!(
         build_operator_tree("xaq")
             .unwrap()
-            .eval_empty_with_context_mut(&mut context),
+            .eval_empty_with_context_mut(&mut stack, &mut context),
         Err(EvalexprError::VariableIdentifierNotFound("xaq".to_owned()))
     );
 }
@@ -1488,9 +1490,10 @@ fn test_type_errors_in_binary_operators() {
 #[test]
 fn test_empty_context() {
     let mut context = EmptyContext::<DefaultNumericTypes>::default();
-    assert_eq!(context.get_value("abc"), None);
+    let mut stack = Stack::new();
+    assert_eq!(context.get_value(istr("abc")), None);
     assert_eq!(
-        context.call_function(&context, "abc", &[Value::Empty]),
+        context.call_function(&mut stack, &context, istr("abc"), &[Value::Empty]),
         Err(EvalexprError::FunctionIdentifierNotFound("abc".to_owned()))
     );
     assert_eq!(
@@ -1509,9 +1512,10 @@ fn test_empty_context() {
 #[test]
 fn test_empty_context_with_builtin_functions() {
     let mut context = EmptyContextWithBuiltinFunctions::<DefaultNumericTypes>::default();
-    assert_eq!(context.get_value("abc"), None);
+    assert_eq!(context.get_value(istr("abc")), None);
+    let mut stack = Stack::new();
     assert_eq!(
-        context.call_function(&context, "abc", &[Value::Empty]),
+        context.call_function(&mut stack, &context, istr("abc"), &[Value::Empty]),
         Err(EvalexprError::FunctionIdentifierNotFound("abc".to_owned()))
     );
     assert_eq!(eval_with_context("max(1,3)", &context), Ok(Value::Float(3.0)));
@@ -1568,8 +1572,8 @@ fn test_hashmap_context_clone_debug() {
     let three = 3;
     context
         .set_function(
-            "mult_3".into(),
-            Function::new(move |_, argument| {
+            istr("mult_3"),
+            Function::new(move |_,_, argument| {
                 // if let Value::Int(int) = argument {
                 //     Ok(Value::Int(int * three))
                 // } else 
@@ -1587,12 +1591,12 @@ fn test_hashmap_context_clone_debug() {
     let four = 4.0;
     context
         .set_function(
-            "function_four".into(),
-            Function::new(move |_,_| Ok(Value::Float(four))),
+            istr("function_four"),
+            Function::new(move |_,_,_| Ok(Value::Float(four))),
         )
         .unwrap();
     context
-        .set_value("variable_five".into(), Value::from_float(5.0))
+        .set_value(istr("variable_five"), Value::from_float(5.0))
         .unwrap();
     let context = context;
     #[allow(clippy::redundant_clone)]
@@ -1600,7 +1604,7 @@ fn test_hashmap_context_clone_debug() {
 
     assert_eq!(format!("{:?}", &context), format!("{:?}", &cloned_context));
     assert_eq!(
-        cloned_context.get_value("variable_five"),
+        cloned_context.get_value(istr("variable_five")),
         Some(&Value::from_float(5.0))
     );
     assert_eq!(
@@ -1732,8 +1736,9 @@ fn test_long_expression_i89() {
         + x * 2.0 * 4.0 * 1.0 * 1.0 * 1.0 * 1.0 * 1.0 * 1.0 * 1.0
         + 7.0 * y.sin()
         - z / (3.0 / 2.0 / (1.0 - x * 4.0 * 1.0 * 1.0 * 1.0 * 1.0)).sin();
+    let mut stack = Stack::new();
     let actual: <DefaultNumericTypes as EvalexprNumericTypes>::Float =
-        tree.eval_float_with_context(&context).unwrap();
+        tree.eval_float_with_context(&mut stack, &context).unwrap();
     assert!(
         (expected - actual).abs() < expected.abs().min(actual.abs()) * 1e-12,
         "expected: {}, actual: {}",
@@ -2128,14 +2133,14 @@ fn test_variable_assignment_and_iteration() {
     assert_eq!(
         variables,
         vec![
-            ("a".to_string(), Value::from_float(5.0)),
-            ("b".to_string(), Value::from_float(5.0))
+            (istr("a"), Value::from_float(5.0)),
+            (istr("b"), Value::from_float(5.0))
         ],
     );
 
     let mut variables: Vec<_> = context.iter_variable_names().collect();
     variables.sort_unstable();
-    assert_eq!(variables, vec!["a".to_string(), "b".to_string()],);
+    assert_eq!(variables, vec![istr("a"), istr("b")],);
 }
 
 #[test]
@@ -2231,7 +2236,7 @@ fn test_clear() {
     // context.clear_functions();
     // assert_eq!(context.get_value("abc"), Some(&("def".into())));
     context.clear_variables();
-    assert_eq!(context.get_value("abc"), None);
+    assert_eq!(context.get_value(istr("abc")), None);
 
     // context
     //     .set_function(
@@ -2252,7 +2257,7 @@ fn test_clear() {
     assert!(eval_with_context("abc(5)", &context).is_err());
 
     context
-        .set_value("five".into(), Value::from_float(5.0))
+        .set_value(istr("five"), Value::from_float(5.0))
         .unwrap();
     // context
     //     .set_function(
@@ -2265,7 +2270,7 @@ fn test_clear() {
     //     Value::String("5".into())
     // );
     context.clear();
-    assert!(context.get_value("five").is_none());
+    assert!(context.get_value(istr("five")).is_none());
     assert!(eval_with_context("abc(5)", &context).is_err());
 }
 

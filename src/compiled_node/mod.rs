@@ -219,7 +219,7 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
             CompiledNode::Const { .. }
             | CompiledNode::VariableIdentifierWrite { .. }
             | CompiledNode::VariableIdentifierRead { .. } => &[],
-            CompiledNode::FunctionIdentifier {  args,.. } => args,
+            CompiledNode::FunctionIdentifier { args, .. } => args,
         }
     }
     pub(crate) fn children_mut(&mut self) -> &mut [CompiledNode<NumericTypes>] {
@@ -256,7 +256,7 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
             CompiledNode::Const { .. }
             | CompiledNode::VariableIdentifierWrite { .. }
             | CompiledNode::VariableIdentifierRead { .. } => &mut [],
-            CompiledNode::FunctionIdentifier {  args,.. } => args,
+            CompiledNode::FunctionIdentifier { args, .. } => args,
         }
     }
     /// Evaluates the node with the given context.
@@ -264,10 +264,6 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
         &self,
         context: &C,
         override_vars: &impl Fn(&str) -> Option<Value<NumericTypes>>,
-        override_fns: &impl Fn(
-            &str,
-            &[CompiledNode<NumericTypes>],
-        ) -> Option<EvalexprResultValue<NumericTypes>>,
     ) -> EvalexprResultValue<NumericTypes> {
         use CompiledNode::*;
         match self {
@@ -275,144 +271,92 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
             Add(args) => {
                 // expect_float_or_string(&arguments[0])?;
                 // expect_float_or_string(&arguments[1])?;
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_float()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_float()?;
 
                 Ok(Value::Float(a + b))
             },
             Sub(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_float()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_float()?;
 
                 Ok(Value::Float(a - b))
             },
             Neg(arg) => {
-                let a = arg
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = arg.eval_priv(context, override_vars)?.as_float()?;
 
                 Ok(Value::Float(-a))
             },
             Mul(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_float()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_float()?;
 
                 Ok(Value::Float(a * b))
             },
             Div(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_float()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_float()?;
 
                 Ok(Value::Float(a / b))
             },
             Mod(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_float()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_float()?;
 
                 Ok(Value::Float(a % b))
             },
             Exp(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_float()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_float()?;
 
                 Ok(Value::Float(a.pow(&b)))
             },
             Eq(args) => {
-                let a = args[0].eval_priv(context, override_vars, override_fns)?;
-                let b = args[1].eval_priv(context, override_vars, override_fns)?;
+                let a = args[0].eval_priv(context, override_vars)?;
+                let b = args[1].eval_priv(context, override_vars)?;
 
                 Ok(Value::Boolean(a == b))
             },
             Neq(args) => {
-                let a = args[0].eval_priv(context, override_vars, override_fns)?;
-                let b = args[1].eval_priv(context, override_vars, override_fns)?;
+                let a = args[0].eval_priv(context, override_vars)?;
+                let b = args[1].eval_priv(context, override_vars)?;
 
                 Ok(Value::Boolean(a != b))
             },
             Gt(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_float()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_float()?;
                 Ok(Value::Boolean(a > b))
             },
             Lt(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_float()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_float()?;
                 Ok(Value::Boolean(a < b))
             },
             Geq(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_float()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_float()?;
                 Ok(Value::Boolean(a >= b))
             },
             Leq(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_float()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_float()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_float()?;
                 Ok(Value::Boolean(a <= b))
             },
             And(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_boolean()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_boolean()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_boolean()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_boolean()?;
 
                 Ok(Value::Boolean(a && b))
             },
             Or(args) => {
-                let a = args[0]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_boolean()?;
-                let b = args[1]
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_boolean()?;
+                let a = args[0].eval_priv(context, override_vars)?.as_boolean()?;
+                let b = args[1].eval_priv(context, override_vars)?.as_boolean()?;
 
                 Ok(Value::Boolean(a || b))
             },
             Not(arg) => {
-                let a = arg
-                    .eval_priv(context, override_vars, override_fns)?
-                    .as_boolean()?;
+                let a = arg.eval_priv(context, override_vars)?.as_boolean()?;
 
                 Ok(Value::Boolean(!a))
             },
@@ -423,8 +367,8 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
 
             Tuple(args) => {
                 if args.len() == 2 {
-                    let a = args[0].eval_priv(context, override_vars, override_fns)?;
-                    let b = args[1].eval_priv(context, override_vars, override_fns)?;
+                    let a = args[0].eval_priv(context, override_vars)?;
+                    let b = args[1].eval_priv(context, override_vars)?;
                     if a.is_float() && b.is_float() {
                         Ok(Value::Float2(a.as_float()?, b.as_float()?))
                     } else {
@@ -433,7 +377,7 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
                 } else {
                     let mut values = Vec::with_capacity(args.len());
                     for arg in args {
-                        values.push(arg.eval_priv(context, override_vars, override_fns)?);
+                        values.push(arg.eval_priv(context, override_vars)?);
                     }
                     Ok(Value::Tuple(values))
                 }
@@ -443,7 +387,7 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
                     return Err(EvalexprError::wrong_operator_argument_amount(0, 1));
                 }
                 let last = args.last().unwrap();
-                let value = last.eval_priv(context, override_vars, override_fns)?;
+                let value = last.eval_priv(context, override_vars)?;
                 Ok(value)
             },
             Const { value } => Ok(value.clone()),
@@ -469,15 +413,10 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
                 }
             },
             FunctionIdentifier { identifier, args } => {
-                // expect_operator_argument_amount(arguments.len(), 1)?;
-                // let arguments = &arguments[0];
-                if let Some(value) = override_fns(identifier, args) {
-                    return value;
-                }
                 let mut arguments: SmallVec<[Value<NumericTypes>; 4]> =
                     SmallVec::with_capacity(args.len());
                 for arg in args {
-                    arguments.push(arg.eval_priv(context, override_vars, override_fns)?);
+                    arguments.push(arg.eval_priv(context, override_vars)?);
                 }
 
                 match context.call_function(context, identifier, &arguments) {
@@ -548,7 +487,7 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
     /// Evaluates the operator tree rooted at this node with empty context.
     pub fn eval(&self) -> EvalexprResultValue<NumericTypes> {
         let context = HashMapContext::<NumericTypes>::new();
-        self.eval_priv(&context, &|_| None, &|_, _| None)
+        self.eval_priv(&context, &|_| None)
     }
     /// Evaluates the operator tree rooted at this node with the given context.
     ///
@@ -557,7 +496,7 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
         &self,
         context: &C,
     ) -> EvalexprResultValue<NumericTypes> {
-        self.eval_priv(context, &|_| None, &|_, _| None)
+        self.eval_priv(context, &|_| None)
     }
     /// Evaluates the operator tree rooted at this node with the given mutable context.
     ///
@@ -584,179 +523,27 @@ impl<NumericTypes: EvalexprNumericTypes> CompiledNode<NumericTypes> {
             Err(error) => Err(error),
         }
     }
-    /// Evaluates the operator tree rooted at this node with the given context.
+    /// Evaluates the operator tree rooted at this node with the given context and override vars
     ///
     /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_with_context_and_x<C: Context<NumericTypes = NumericTypes>>(
+    pub fn eval_with_context_and_override<C: Context<NumericTypes = NumericTypes>>(
         &self,
         context: &C,
-        x: &Value<NumericTypes>,
-        step: NumericTypes::Float,
+        override_vars: impl Fn(&str) -> Option<Value<NumericTypes>>,
     ) -> EvalexprResultValue<NumericTypes> {
-        self.eval_priv(
-            context,
-            &|identifier| {
-                if identifier == "x" {
-                    Some(x.clone())
-                } else {
-                    None
-                }
-            },
-            &|identifier, args| {
-                if identifier == "d" {
-                    #[inline(always)]
-                    fn inner<T: EvalexprNumericTypes, C: Context<NumericTypes = T>>(
-                        context: &C,
-                        args: &[CompiledNode<T>],
-                        x: &Value<T>,
-                        step: T::Float,
-                    ) -> EvalexprResultValue<T> {
-                        let x2 = Value::Float(x.as_float()? + step);
-
-                        let expr = args.first().ok_or_else(|| {
-                            EvalexprError::CustomMessage(
-                                "Derivative needs 1 argument: the expression".to_string(),
-                            )
-                        })?;
-                        let y2 = expr
-                            .eval_with_context_and_x(context, &x2, step)?
-                            .as_float()?;
-                        let y1 = expr.eval_with_context_and_x(context, x, step)?.as_float()?;
-
-                        Ok(Value::Float((y2 - y1) / step))
-                    }
-                    Some(inner(context, args, x, step))
-                } else {
-                    None
-                }
-            },
-        )
-    }
-    /// Evaluates the operator tree rooted at this node with the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_with_context_and_y<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-        y: &Value<NumericTypes>,
-        step: NumericTypes::Float,
-    ) -> EvalexprResultValue<NumericTypes> {
-        self.eval_priv(
-            context,
-            &|identifier| {
-                if identifier == "y" {
-                    Some(y.clone())
-                } else {
-                    None
-                }
-            },
-            &|identifier, args| {
-                if identifier == "d" {
-                    #[inline(always)]
-                    fn inner<T: EvalexprNumericTypes, C: Context<NumericTypes = T>>(
-                        context: &C,
-                        args: &[CompiledNode<T>],
-                        y: &Value<T>,
-                        step: T::Float,
-                    ) -> EvalexprResultValue<T> {
-                        let y2 = Value::Float(y.as_float()? + step);
-
-                        let expr = args.first().ok_or_else(|| {
-                            EvalexprError::CustomMessage(
-                                "Derivative needs 1 argument: the expression".to_string(),
-                            )
-                        })?;
-                        let x2 = expr
-                            .eval_with_context_and_y(context, &y2, step)?
-                            .as_float()?;
-                        let x1 = expr.eval_with_context_and_y(context, y, step)?.as_float()?;
-
-                        Ok(Value::Float((x2 - x1) / step))
-                    }
-                    Some(inner(context, args, y, step))
-                } else {
-                    None
-                }
-            },
-        )
-    }
-
-    /// Evaluates the operator tree rooted at this node with the given context.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_with_context_and_xy_and_z<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-        x: &Value<NumericTypes>,
-        y: &Value<NumericTypes>,
-        zx: &Value<NumericTypes>,
-        zy: &Value<NumericTypes>,
-    ) -> EvalexprResultValue<NumericTypes> {
-        self.eval_priv(
-            context,
-            &|identifier| {
-                if identifier == "x" {
-                    Some(x.clone())
-                } else if identifier == "y" {
-                    Some(y.clone())
-                } else if identifier == "zx" {
-                    Some(zx.clone())
-                } else if identifier == "zy" {
-                    Some(zy.clone())
-                } else {
-                    None
-                }
-            },
-            &|_, _| None,
-        )
+        self.eval_priv(context, &override_vars)
     }
 
     /// Evaluates the operator tree rooted at this node into a float with an the given context.
     /// If the result of the expression is an integer, it is silently converted into a float.
     ///
     /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_float_with_context_and_x<C: Context<NumericTypes = NumericTypes>>(
+    pub fn eval_float_with_context_and_override<C: Context<NumericTypes = NumericTypes>>(
         &self,
         context: &C,
-        x: &Value<NumericTypes>,
-        step: NumericTypes::Float,
+        override_vars: impl Fn(&str) -> Option<Value<NumericTypes>>,
     ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context_and_x(context, x, step) {
-            Ok(Value::Float(float)) => Ok(float),
-            Ok(value) => Err(EvalexprError::expected_float(value)),
-            Err(error) => Err(error),
-        }
-    }
-    /// Evaluates the operator tree rooted at this node into a float with an the given context.
-    /// If the result of the expression is an integer, it is silently converted into a float.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_float_with_context_and_y<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-        y: &Value<NumericTypes>,
-        step: NumericTypes::Float,
-    ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context_and_y(context, y, step) {
-            Ok(Value::Float(float)) => Ok(float),
-            Ok(value) => Err(EvalexprError::expected_float(value)),
-            Err(error) => Err(error),
-        }
-    }
-
-    /// Evaluates the operator tree rooted at this node into a float with an the given context.
-    /// If the result of the expression is an integer, it is silently converted into a float.
-    ///
-    /// Fails, if one of the operators in the expression tree fails.
-    pub fn eval_float_with_context_and_xy_and_z<C: Context<NumericTypes = NumericTypes>>(
-        &self,
-        context: &C,
-        x: &Value<NumericTypes>,
-        y: &Value<NumericTypes>,
-        zx: &Value<NumericTypes>,
-        zy: &Value<NumericTypes>,
-    ) -> EvalexprResult<<NumericTypes as EvalexprNumericTypes>::Float, NumericTypes> {
-        match self.eval_with_context_and_xy_and_z(context, x, y, zx, zy) {
+        match self.eval_with_context_and_override(context, override_vars) {
             Ok(Value::Float(float)) => Ok(float),
             Ok(value) => Err(EvalexprError::expected_float(value)),
             Err(error) => Err(error),

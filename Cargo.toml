@@ -30,6 +30,7 @@ rand = { version = "0.8.5", optional = true }
 smallvec = { version = "1.15" }
 arrayvec = { version = "0.7" }
 rustc-hash = "2.1"
+istr ="0.1"
 
 # num-traits = { version = "0.2.19", optional = true }
 

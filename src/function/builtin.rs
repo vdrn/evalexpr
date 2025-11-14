@@ -7,7 +7,7 @@ use crate::{
 
 macro_rules! simple_math {
     ($func:ident) => {
-        Some(Function::new(|_c, argument: &[Value<NumericTypes>]| {
+        Some(Function::new(|_s, _c, argument: &[Value<NumericTypes>]| {
             let num = argument
                 .first()
                 .ok_or_else(|| EvalexprError::wrong_function_argument_amount(0, 1))?
@@ -16,7 +16,7 @@ macro_rules! simple_math {
         }))
     };
     ($func:ident, 2) => {
-        Some(Function::new(|_c, argument: &[Value<NumericTypes>]| {
+        Some(Function::new(|_s, _c, argument: &[Value<NumericTypes>]| {
             let a = argument
                 .first()
                 .ok_or_else(|| EvalexprError::wrong_function_argument_amount(0, 2))?
@@ -35,7 +35,7 @@ fn float_is<NumericTypes: EvalexprNumericTypes, C: Context<NumericTypes = Numeri
     func: fn(&NumericTypes::Float) -> bool,
 ) -> Option<Function<NumericTypes, C>> {
     Some(Function::new(
-        move |_c, argument: &[Value<NumericTypes>]| {
+        move |_s, _c, argument: &[Value<NumericTypes>]| {
             Ok(func(
                 &argument
                     .first()
@@ -112,7 +112,7 @@ pub fn builtin_function<
         "math::is_infinite" => float_is(NumericTypes::Float::is_infinite),
         "math::is_normal" => float_is(NumericTypes::Float::is_normal),
         // Absolute value
-        "math::abs" => Some(Function::new(|_c, argument| match argument.first() {
+        "math::abs" => Some(Function::new(|_s, _c, argument| match argument.first() {
             Some(Value::Float(num)) => Ok(Value::Float(
                 <NumericTypes as EvalexprNumericTypes>::Float::abs(num),
             )),
@@ -134,7 +134,7 @@ pub fn builtin_function<
         //     }
         //     .into())
         // })),
-        "min" => Some(Function::new(|_c, arguments| {
+        "min" => Some(Function::new(|_s, _c, arguments| {
             // let arguments = argument.as_tuple_ref()?;
             let mut min_float = NumericTypes::Float::MAX;
             debug_assert!(min_float.is_infinite());
@@ -149,7 +149,7 @@ pub fn builtin_function<
 
             Ok(Value::Float(min_float))
         })),
-        "max" => Some(Function::new(|_c, arguments| {
+        "max" => Some(Function::new(|_s, _c, arguments| {
             let mut max_float = NumericTypes::Float::MIN;
             debug_assert!(max_float.is_infinite());
 
@@ -167,12 +167,12 @@ pub fn builtin_function<
             Ok(Value::Float(max_float))
             // }
         })),
-        "if" => Some(Function::new(|_c, arguments| {
+        "if" => Some(Function::new(|_s, _c, arguments| {
             expect_function_argument_amount(arguments.len(), 3)?;
             let result_index = if arguments[0].as_boolean()? { 1 } else { 2 };
             Ok(arguments[result_index].clone())
         })),
-        "contains" => Some(Function::new(move |_c, arguments| {
+        "contains" => Some(Function::new(move |_s, _c, arguments| {
             expect_function_argument_amount(arguments.len(), 2)?;
             if let (Value::Tuple(a), b) = (&arguments[0].clone(), &arguments[1].clone()) {
                 if let Value::Float(_) | Value::Boolean(_) = b {
@@ -192,7 +192,7 @@ pub fn builtin_function<
                 Err(EvalexprError::expected_tuple(arguments[0].clone()))
             }
         })),
-        "contains_any" => Some(Function::new(move |_c, arguments| {
+        "contains_any" => Some(Function::new(move |_s, _c, arguments| {
             expect_function_argument_amount(arguments.len(), 2)?;
             if let (Value::Tuple(a), b) = (&arguments[0].clone(), &arguments[1].clone()) {
                 if let Value::Tuple(b) = b {
@@ -226,7 +226,7 @@ pub fn builtin_function<
                 Err(EvalexprError::expected_tuple(arguments[0].clone()))
             }
         })),
-        "len" => Some(Function::new(|_c, arguments| {
+        "len" => Some(Function::new(|_s, _c, arguments| {
             expect_function_argument_amount(arguments.len(), 1)?;
             // if let Ok(subject) = arguments[0].as_str() {
             //     Ok(Value::Float(NumericTypes::int_as_float(

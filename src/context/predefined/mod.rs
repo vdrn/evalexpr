@@ -47,7 +47,7 @@ mod tests {
             use crate::{Context, Value};
 
             assert_eq!(
-                context.get_value("PI"),
+                context.get_value(crate::istr("PI")),
                 Some(&Value::Float(core::f64::consts::PI))
             );
         }

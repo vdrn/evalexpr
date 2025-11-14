@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::{
-    Context, error::EvalexprResultValue, value::{
+    Context, Stack, error::EvalexprResultValue, value::{
         Value, numeric_types::{EvalexprNumericTypes, default_numeric_types::DefaultNumericTypes}
     }
 };
@@ -11,7 +11,7 @@ pub(crate) mod builtin;
 /// A helper trait to enable cloning through `Fn` trait objects.
 trait ClonableFn<C:Context<NumericTypes= NumericTypes>, NumericTypes: EvalexprNumericTypes = DefaultNumericTypes, >
 where
-    Self: Fn(&C, &[Value<NumericTypes>]) -> EvalexprResultValue<NumericTypes>,
+    Self: Fn(&mut Stack<NumericTypes>, &C, &[Value<NumericTypes>]) -> EvalexprResultValue<NumericTypes>,
     Self: Send + Sync + 'static,
 {
     fn dyn_clone(&self) -> Box<dyn ClonableFn<C, NumericTypes>>;
@@ -19,7 +19,7 @@ where
 
 impl<F, NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>> ClonableFn<C, NumericTypes> for F
 where
-    F: Fn(&C, &[Value<NumericTypes>]) -> EvalexprResultValue<NumericTypes>,
+    F: Fn(&mut Stack<NumericTypes>, &C, &[Value<NumericTypes>]) -> EvalexprResultValue<NumericTypes>,
     F: Send + Sync + 'static,
     F: Clone,
 {
@@ -60,7 +60,7 @@ impl<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>>
     /// The `function` is boxed for storage.
     pub fn new<F>(function: F) -> Self
     where
-        F: Fn(&C, &[Value<NumericTypes>]) -> EvalexprResultValue<NumericTypes>,
+        F: Fn(&mut Stack<NumericTypes>, &C, &[Value<NumericTypes>]) -> EvalexprResultValue<NumericTypes>,
         F: Send + Sync + 'static,
         F: Clone,
     {
@@ -69,8 +69,8 @@ impl<NumericTypes: EvalexprNumericTypes, C:Context<NumericTypes = NumericTypes>>
         }
     }
 
-    pub(crate) fn call(&self,context:&C, argument: &[Value<NumericTypes>]) -> EvalexprResultValue<NumericTypes> {
-        (self.function)(context, argument)
+    pub(crate) fn call(&self, stack:&mut Stack<NumericTypes>, context:&C, argument: &[Value<NumericTypes>]) -> EvalexprResultValue<NumericTypes> {
+        (self.function)(stack, context, argument)
     }
 }
 

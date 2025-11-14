@@ -567,16 +567,16 @@
 //!
 
 #![deny(missing_docs)]
-#![forbid(unsafe_code)]
+// #![forbid(unsafe_code)]
 #![allow(clippy::get_first)]
 
 pub use crate::{
-    compiled_node::CompiledNode,
     context::{
         Context, ContextWithMutableFunctions, ContextWithMutableVariables, EmptyContext,
         EmptyContextWithBuiltinFunctions, HashMapContext, IterateVariablesContext,
     },
     error::{EvalexprError, EvalexprResult},
+    flat_node::{FlatNode, Stack},
     function::Function,
     interface::*,
     operator::Operator,
@@ -591,12 +591,20 @@ pub use crate::{
         EmptyType, TupleType, Value, EMPTY_VALUE,
     },
 };
+/// Interned string for identifiers
+pub type IStr = istr::IStr;
+pub(crate) type IStrMap<T> = istr::IStrMap<T>;
+/// Interned string constructor
+pub fn istr(string: &str) -> IStr {
+    istr::IStr::new(string)
+}
 
-mod compiled_node;
+// mod compiled_node;
 mod context;
 pub mod error;
 #[cfg(feature = "serde")]
 mod feature_serde;
+mod flat_node;
 mod function;
 mod interface;
 mod operator;

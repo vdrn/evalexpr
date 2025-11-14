@@ -6,6 +6,7 @@ impl<NumericTypes: EvalexprNumericTypes> fmt::Display for EvalexprError<NumericT
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         use crate::EvalexprError::*;
         match self {
+            StackOverflow => write!(f, "The stack overflowed."),
             WrongOperatorArgumentAmount { expected, actual } => write!(
                 f,
                 "An operator expected {} arguments, but got {}.",
@@ -28,7 +29,9 @@ impl<NumericTypes: EvalexprNumericTypes> fmt::Display for EvalexprError<NumericT
             },
             // ExpectedInt { actual } => write!(f, "Expected a Value::Int, but got {:?}.", actual),
             ExpectedFloat { actual } => write!(f, "Expected a Value::Float, but got {:?}.", actual),
-            ExpectedFloat2 { actual } => write!(f, "Expected a Value::Float2, but got {:?}.", actual),
+            ExpectedFloat2 { actual } => {
+                write!(f, "Expected a Value::Float2, but got {:?}.", actual)
+            },
             // ExpectedNumber { actual } => write!(
             //     f,
             //     "Expected a Value::Float or Value::Int, but got {:?}.",

@@ -25,6 +25,8 @@ mod display;
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum EvalexprError<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes> {
+    /// The stack overflowed.
+    StackOverflow,
     /// An operator was called with a wrong amount of arguments.
     WrongOperatorArgumentAmount {
         /// The expected amount of arguments.
@@ -253,7 +255,6 @@ pub enum EvalexprError<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes>
     CustomMessage(String),
 }
 
-
 impl<NumericTypes: EvalexprNumericTypes> EvalexprError<NumericTypes> {
     /// Construct a `WrongOperatorArgumentAmount` error.
     pub fn wrong_operator_argument_amount(actual: usize, expected: usize) -> Self {
@@ -380,8 +381,6 @@ impl<NumericTypes: EvalexprNumericTypes> EvalexprError<NumericTypes> {
         EvalexprError::InvalidRegex { regex, message }
     }
 }
-
-
 
 /// Returns `Ok(())` if the actual and expected parameters are equal, and `Err(Error::WrongOperatorArgumentAmount)` otherwise.
 pub(crate) fn expect_operator_argument_amount<NumericTypes: EvalexprNumericTypes>(

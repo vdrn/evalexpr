@@ -1,15 +1,12 @@
-use crate::function::builtin::builtin_function;
-
 use crate::{
-    context::Context,
-    error::*,
+    istr,
     value::{
         numeric_types::{
-            default_numeric_types::DefaultNumericTypes, EvalexprFloat, EvalexprNumericTypes,
+            default_numeric_types::DefaultNumericTypes,EvalexprNumericTypes,
         },
         Value,
     },
-    ContextWithMutableVariables,
+    IStr,
 };
 
 mod display;
@@ -87,17 +84,17 @@ pub enum Operator<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes> {
     /// A write to a variable identifier.
     VariableIdentifierWrite {
         /// The identifier of the variable.
-        identifier: String,
+        identifier: IStr,
     },
     /// A read from a variable identifier.
     VariableIdentifierRead {
         /// The identifier of the variable.
-        identifier: String,
+        identifier: IStr,
     },
     /// A function identifier.
     FunctionIdentifier {
         /// The identifier of the function.
-        identifier: String,
+        identifier: IStr,
     },
 }
 
@@ -106,16 +103,22 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
         Operator::Const { value }
     }
 
-    pub(crate) fn variable_identifier_write(identifier: String) -> Self {
-        Operator::VariableIdentifierWrite { identifier }
+    pub(crate) fn variable_identifier_write(identifier: &str) -> Self {
+        Operator::VariableIdentifierWrite {
+            identifier: istr(identifier),
+        }
     }
 
-    pub(crate) fn variable_identifier_read(identifier: String) -> Self {
-        Operator::VariableIdentifierRead { identifier }
+    pub(crate) fn variable_identifier_read(identifier: &str) -> Self {
+        Operator::VariableIdentifierRead {
+            identifier: istr(identifier),
+        }
     }
 
-    pub(crate) fn function_identifier(identifier: String) -> Self {
-        Operator::FunctionIdentifier { identifier }
+    pub(crate) fn function_identifier(identifier: &str) -> Self {
+        Operator::FunctionIdentifier {
+            identifier: istr(identifier),
+        }
     }
 
     /// Returns the precedence of the operator.
@@ -209,7 +212,7 @@ impl<NumericTypes: EvalexprNumericTypes> Operator<NumericTypes> {
 
     //             if let (Ok(a), Ok(b)) = (arguments[0].as_float(), arguments[1].as_float()) {
     //                 Ok(Value::Float(a + b))
-    //             // } 
+    //             // }
     //             // else if let (Ok(a), Ok(b)) = (arguments[0].as_string(), arguments[1].as_string())
     //             // {
     //             //     let mut result = String::with_capacity(a.len() + b.len());

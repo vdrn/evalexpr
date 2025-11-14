@@ -14,7 +14,7 @@ use crate::{
         value_type::ValueType,
         Value,
     },
-    EvalexprError, EvalexprResult, HashMap,
+    EvalexprError, EvalexprResult, IStr, IStrMap, Stack,
 };
 
 mod predefined;
@@ -25,14 +25,15 @@ pub trait Context {
     type NumericTypes: EvalexprNumericTypes;
 
     /// Returns the value that is linked to the given identifier.
-    fn get_value(&self, identifier: &str) -> Option<&Value<Self::NumericTypes>>;
+    fn get_value(&self, identifier: IStr) -> Option<&Value<Self::NumericTypes>>;
 
     /// Calls the function that is linked to the given identifier with the given argument.
     /// If no function with the given identifier is found, this method returns `EvalexprError::FunctionIdentifierNotFound`.
     fn call_function(
         &self,
+        stack: &mut Stack<Self::NumericTypes>,
         context: &Self,
-        identifier: &str,
+        identifier: IStr,
         argument: &[Value<Self::NumericTypes>],
     ) -> EvalexprResultValue<Self::NumericTypes>;
 
@@ -52,7 +53,7 @@ pub trait ContextWithMutableVariables: Context {
     /// Sets the variable with the given identifier to the given value.
     fn set_value(
         &mut self,
-        _identifier: &str,
+        _identifier: IStr,
         _value: Value<Self::NumericTypes>,
     ) -> EvalexprResult<(), Self::NumericTypes> {
         Err(EvalexprError::ContextNotMutable)
@@ -61,7 +62,7 @@ pub trait ContextWithMutableVariables: Context {
     /// Removes the variable with the given identifier from the context.
     fn remove_value(
         &mut self,
-        _identifier: &str,
+        _identifier: IStr,
     ) -> EvalexprResult<Option<Value<Self::NumericTypes>>, Self::NumericTypes> {
         Err(EvalexprError::ContextNotMutable)
     }
@@ -72,7 +73,7 @@ pub trait ContextWithMutableFunctions: Context {
     /// Sets the function with the given identifier to the given function.
     fn set_function(
         &mut self,
-        _identifier: String,
+        _identifier: IStr,
         _function: Function<Self::NumericTypes, Self>,
     ) -> EvalexprResult<(), Self::NumericTypes>
     where
@@ -85,11 +86,11 @@ pub trait ContextWithMutableFunctions: Context {
 /// A context that allows to iterate over its variable names with their values.
 pub trait IterateVariablesContext: Context {
     /// The iterator type for iterating over variable name-value pairs.
-    type VariableIterator<'a>: Iterator<Item = (String, Value<Self::NumericTypes>)>
+    type VariableIterator<'a>: Iterator<Item = (IStr, Value<Self::NumericTypes>)>
     where
         Self: 'a;
     /// The iterator type for iterating over variable names.
-    type VariableNameIterator<'a>: Iterator<Item = String>
+    type VariableNameIterator<'a>: Iterator<Item = IStr>
     where
         Self: 'a;
 
@@ -117,14 +118,15 @@ pub struct EmptyContext<NumericTypes>(PhantomData<NumericTypes>);
 impl<NumericTypes: EvalexprNumericTypes> Context for EmptyContext<NumericTypes> {
     type NumericTypes = NumericTypes;
 
-    fn get_value(&self, _identifier: &str) -> Option<&Value<Self::NumericTypes>> {
+    fn get_value(&self, _identifier: IStr) -> Option<&Value<Self::NumericTypes>> {
         None
     }
 
     fn call_function(
         &self,
+        _stack: &mut Stack<Self::NumericTypes>,
         _context: &Self,
-        identifier: &str,
+        identifier: IStr,
         _argument: &[Value<Self::NumericTypes>],
     ) -> EvalexprResultValue<Self::NumericTypes> {
         Err(EvalexprError::FunctionIdentifierNotFound(
@@ -152,11 +154,11 @@ impl<NumericTypes: EvalexprNumericTypes> Context for EmptyContext<NumericTypes> 
 
 impl<NumericTypes: EvalexprNumericTypes> IterateVariablesContext for EmptyContext<NumericTypes> {
     type VariableIterator<'a>
-        = iter::Empty<(String, Value<Self::NumericTypes>)>
+        = iter::Empty<(IStr, Value<Self::NumericTypes>)>
     where
         Self: 'a;
     type VariableNameIterator<'a>
-        = iter::Empty<String>
+        = iter::Empty<IStr>
     where
         Self: 'a;
 
@@ -185,14 +187,15 @@ impl<NumericTypes: EvalexprNumericTypes> Context
 {
     type NumericTypes = NumericTypes;
 
-    fn get_value(&self, _identifier: &str) -> Option<&Value<Self::NumericTypes>> {
+    fn get_value(&self, _identifier: IStr) -> Option<&Value<Self::NumericTypes>> {
         None
     }
 
     fn call_function(
         &self,
+        _stack: &mut Stack<Self::NumericTypes>,
         _context: &Self,
-        identifier: &str,
+        identifier: IStr,
         _argument: &[Value<Self::NumericTypes>],
     ) -> EvalexprResultValue<Self::NumericTypes> {
         Err(EvalexprError::FunctionIdentifierNotFound(
@@ -222,11 +225,11 @@ impl<NumericTypes: EvalexprNumericTypes> IterateVariablesContext
     for EmptyContextWithBuiltinFunctions<NumericTypes>
 {
     type VariableIterator<'a>
-        = iter::Empty<(String, Value<Self::NumericTypes>)>
+        = iter::Empty<(IStr, Value<Self::NumericTypes>)>
     where
         Self: 'a;
     type VariableNameIterator<'a>
-        = iter::Empty<String>
+        = iter::Empty<IStr>
     where
         Self: 'a;
 
@@ -253,9 +256,9 @@ impl<NumericTypes> Default for EmptyContextWithBuiltinFunctions<NumericTypes> {
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct HashMapContext<NumericTypes: EvalexprNumericTypes = DefaultNumericTypes> {
-    variables: HashMap<String, Value<NumericTypes>>,
+    variables: IStrMap<Value<NumericTypes>>,
     #[cfg_attr(feature = "serde", serde(skip))]
-    functions: HashMap<String, Function<NumericTypes, HashMapContext<NumericTypes>>>,
+    functions: IStrMap<Function<NumericTypes, HashMapContext<NumericTypes>>>,
 
     /// True if builtin functions are disabled.
     without_builtin_functions: bool,
@@ -314,18 +317,19 @@ impl<NumericTypes: EvalexprNumericTypes> HashMapContext<NumericTypes> {
 impl<NumericTypes: EvalexprNumericTypes> Context for HashMapContext<NumericTypes> {
     type NumericTypes = NumericTypes;
 
-    fn get_value(&self, identifier: &str) -> Option<&Value<Self::NumericTypes>> {
-        self.variables.get(identifier)
+    fn get_value(&self, identifier: IStr) -> Option<&Value<Self::NumericTypes>> {
+        self.variables.get(&identifier)
     }
 
     fn call_function(
         &self,
+        stack: &mut Stack<Self::NumericTypes>,
         context: &Self,
-        identifier: &str,
+        identifier: IStr,
         argument: &[Value<Self::NumericTypes>],
     ) -> EvalexprResultValue<Self::NumericTypes> {
-        if let Some(function) = self.functions.get(identifier) {
-            function.call(context, argument)
+        if let Some(function) = self.functions.get(&identifier) {
+            function.call(stack, context, argument)
         } else {
             Err(EvalexprError::FunctionIdentifierNotFound(
                 identifier.to_string(),
@@ -351,10 +355,10 @@ impl<NumericTypes: EvalexprNumericTypes> ContextWithMutableVariables
 {
     fn set_value(
         &mut self,
-        identifier: &str,
+        identifier: IStr,
         value: Value<Self::NumericTypes>,
     ) -> EvalexprResult<(), NumericTypes> {
-        if let Some(existing_value) = self.variables.get_mut(identifier) {
+        if let Some(existing_value) = self.variables.get_mut(&identifier) {
             if ValueType::from(&existing_value) == ValueType::from(&value) {
                 *existing_value = value;
                 return Ok(());
@@ -364,16 +368,16 @@ impl<NumericTypes: EvalexprNumericTypes> ContextWithMutableVariables
         }
 
         // Implicit else, because `self.variables` and `identifier` are not unborrowed in else
-        self.variables.insert(identifier.to_string(), value);
+        self.variables.insert(identifier, value);
         Ok(())
     }
 
     fn remove_value(
         &mut self,
-        identifier: &str,
+        identifier: IStr,
     ) -> EvalexprResult<Option<Value<Self::NumericTypes>>, Self::NumericTypes> {
         // Removes a value from the `self.variables`, returning the value at the key if the key was previously in the map.
-        Ok(self.variables.remove(identifier))
+        Ok(self.variables.remove(&identifier))
     }
 }
 
@@ -382,7 +386,7 @@ impl<NumericTypes: EvalexprNumericTypes> ContextWithMutableFunctions
 {
     fn set_function(
         &mut self,
-        identifier: String,
+        identifier: IStr,
         function: Function<NumericTypes, Self>,
     ) -> EvalexprResult<(), Self::NumericTypes> {
         self.functions.insert(identifier, function);
@@ -393,20 +397,20 @@ impl<NumericTypes: EvalexprNumericTypes> ContextWithMutableFunctions
 impl<NumericTypes: EvalexprNumericTypes> IterateVariablesContext for HashMapContext<NumericTypes> {
     type VariableIterator<'a>
         = std::iter::Map<
-        std::collections::hash_map::Iter<'a, String, Value<NumericTypes>>,
-        fn((&String, &Value<NumericTypes>)) -> (String, Value<NumericTypes>),
+        std::collections::hash_map::Iter<'a, IStr, Value<NumericTypes>>,
+        fn((&IStr, &Value<NumericTypes>)) -> (IStr, Value<NumericTypes>),
     >
     where
         Self: 'a;
     type VariableNameIterator<'a>
-        = std::iter::Cloned<std::collections::hash_map::Keys<'a, String, Value<NumericTypes>>>
+        = std::iter::Cloned<std::collections::hash_map::Keys<'a, IStr, Value<NumericTypes>>>
     where
         Self: 'a;
 
     fn iter_variables(&self) -> Self::VariableIterator<'_> {
         self.variables
             .iter()
-            .map(|(string, value)| (string.clone(), value.clone()))
+            .map(|(string, value)| (*string, value.clone()))
     }
 
     fn iter_variable_names(&self) -> Self::VariableNameIterator<'_> {
@@ -464,7 +468,7 @@ macro_rules! context_map {
     // }};
     // add a float value, and chain the eventual error with the ones in the next values
     ( ($ctx:expr) $k:expr => float $v:expr , $($tt:tt)*) => {{
-        $crate::ContextWithMutableVariables::set_value($ctx, $k.into(), $crate::Value::from_float($v.into()))
+        $crate::ContextWithMutableVariables::set_value($ctx, crate::istr($k), $crate::Value::from_float($v.into()))
             .and($crate::context_map!(($ctx) $($tt)*))
     }};
     // add a value, and chain the eventual error with the ones in the next values
